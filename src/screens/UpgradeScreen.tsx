@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useThemeStore } from '../store/themeStore'
+import { SERVER_URL } from '../utils/config'
 import { useAuthStore } from '../store/authStore'
 import { space, radius, font } from '../styles/theme'
 
@@ -29,7 +30,7 @@ export default function UpgradeScreen({ onClose }: Props) {
     setError('')
 
     try {
-      const res = await fetch('http://localhost:3002/create-checkout-session', {
+      const res = await fetch(`${SERVER_URL}/stripe/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, email: user.username }),

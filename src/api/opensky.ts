@@ -17,9 +17,10 @@ import type { Flight } from '../types'
 const USERNAME = process.env.REACT_APP_OPENSKY_USERNAME ?? ''
 const PASSWORD = process.env.REACT_APP_OPENSKY_PASSWORD ?? ''
 
-// Proxy runs on localhost:3001 (node proxy.js in a second terminal)
-// The proxy adds credentials and forwards to OpenSky, bypassing CORS
-const authBase = (): string => 'http://localhost:3001/api'
+import { SERVER_URL } from '../utils/config'
+
+// Proxy runs on SERVER_URL (combined server)
+const authBase = (): string => `${SERVER_URL}/api`
 
 // ── Airline name lookup from callsign prefix ───────────────────────────────────
 const AIRLINE_PREFIXES: Record<string, string> = {
@@ -125,7 +126,6 @@ export async function fetchUSFlights(): Promise<Flight[]> {
       .map(normaliseState)
       .filter((f): f is Flight => f !== null)
       .filter(f => f.altitude > 5000)
-      .filter(f => isCommercial(f.id))  // ← add this line
   } catch (err) {
     console.error('OpenSky fetch failed:', err)
     return []
@@ -161,27 +161,11 @@ export async function fetchFlightPosition(icao24: string): Promise<Partial<Fligh
   }
 }
 
-// Commercial airline prefixes only — 3-letter ICAO codes
-const COMMERCIAL_PREFIXES = new Set([
-  'UAL', 'DAL', 'AAL', 'SWA', 'JBU', 'ASA', 'FFT', 'NKS', 'HAL',
-  'SKW', 'RPA', 'EDV', 'ENY', 'GJS', 'QXE', 'JIA', 'PDT', 'ASH',
-  'ACA', 'WJA', 'JZA', 'CJT', 'ROU', 'GLR',
-  'AMX', 'VOI', 'VIV', 'AEI',
-  'UPS', 'FDX', 'ABX', 'ATN',
-  'SCX', 'SUN', 'TWY', 'AAY',
-])
-
-function isCommercial(callsign: string): boolean {
-  const prefix = callsign.trim().slice(0, 3).toUpperCase()
-  return COMMERCIAL_PREFIXES.has(prefix)
-}
-
 /**
- * Filter to commercial flights only, under 2 hours remaining, max 30
+ * Filter flights for free tier (under 2 hours remaining, max 30)
  */
 export function filterFreeTierPool(flights: Flight[]): Flight[] {
   return flights
-    .filter(f => isCommercial(f.id))
     .filter(f => f.remainingMinutes <= 120)
     .slice(0, 30)
 }
