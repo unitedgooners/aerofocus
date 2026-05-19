@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+.env
+*.log
+.DS_Store
+stripe-server.js
+proxy.js
+poller.js
+.env
+.env
+*.env*
+.env
+*.env*
