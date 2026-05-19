@@ -16,8 +16,8 @@ const https = require('https')
 const http  = require('http')
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const OPENSKY_USERNAME  = 'goonersunited'
-const OPENSKY_PASSWORD  = '37121499Sam'
+const OPENSKY_USERNAME  = process.env.OPENSKY_USERNAME || ''
+const OPENSKY_PASSWORD  = process.env.OPENSKY_PASSWORD || ''
 const SUPABASE_URL      = process.env.REACT_APP_SUPABASE_URL      || ''
 const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || ''
 const POLL_INTERVAL_MS  = 5 * 60 * 1000   // 5 minutes
