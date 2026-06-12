@@ -76,7 +76,7 @@ export default function LiveFlightMap({ lat, lng, heading = 0 }: Props) {
       map.remove()
       mapRef.current = null
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // Update marker position + trail on lat/lng change
   useEffect(() => {
