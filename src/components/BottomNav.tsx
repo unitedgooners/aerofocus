@@ -77,10 +77,13 @@ export default function BottomNav({ active, onNavigate, hasActiveSession }: Prop
               }} />
             )}
             {tab.id === 'hangar' ? (
-              <PropellerIcon color={isActive ? theme.navActive : theme.navInactive} />
+              <div style={{ height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <PropellerIcon color={isActive ? theme.navActive : theme.navInactive} />
+              </div>
             ) : (
               <span style={{
                 fontSize: 18,
+                lineHeight: '18px',
                 color: isActive ? theme.navActive : theme.navInactive,
                 transition: 'color 0.3s',
               }}>{tab.icon}</span>
