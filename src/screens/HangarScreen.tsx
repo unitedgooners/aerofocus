@@ -13,6 +13,7 @@ import {
   type BoardingPassTheme,
 } from '../api/fleetApi'
 import { useBoardingPassThemeStore } from '../store/boardingPassThemeStore'
+import { useActiveAircraftStore } from '../store/activeAircraftStore'
 
 interface Props {
   onBack: () => void
@@ -38,6 +39,7 @@ export default function HangarScreen({ onBack }: Props) {
   const { user, refreshProfile } = useAuthStore()
   const { theme }                = useThemeStore()
   const { ownedThemes, activeThemeId, load: loadThemes, setActiveTheme } = useBoardingPassThemeStore()
+  const { activeAircraftId, load: loadAircraft, setActiveAircraft } = useActiveAircraftStore()
 
   const [catalog, setCatalog]       = useState<AircraftModel[]>([])
   const [fleet, setFleet]           = useState<OwnedAircraft[]>([])
@@ -59,6 +61,7 @@ export default function HangarScreen({ onBack }: Props) {
     setFleet(f)
     setThemeCatalog(t)
     await loadThemes(user.id)
+    await loadAircraft(user.id)
     setLoading(false)
   }
 
@@ -186,7 +189,17 @@ export default function HangarScreen({ onBack }: Props) {
             Loading hangar...
           </div>
         ) : tab === 'fleet' ? (
-          <FleetGrid fleet={fleet} theme={theme} />
+          <FleetGrid
+            fleet={fleet}
+            theme={theme}
+            activeAircraftId={activeAircraftId}
+            onSelect={async (aircraftId) => {
+              if (!user) return
+              await setActiveAircraft(user.id, aircraftId)
+              setToast('✓ Now flying this aircraft')
+              setTimeout(() => setToast(''), 1500)
+            }}
+          />
         ) : tab === 'shop' ? (
           <ShopGrid
             items={shopItems}
@@ -215,7 +228,14 @@ export default function HangarScreen({ onBack }: Props) {
 }
 
 // ── Fleet grid — owned aircraft ──────────────────────────────────────────────────
-function FleetGrid({ fleet, theme }: { fleet: OwnedAircraft[]; theme: any }) {
+function FleetGrid({
+  fleet, theme, activeAircraftId, onSelect,
+}: {
+  fleet: OwnedAircraft[]
+  theme: any
+  activeAircraftId: string
+  onSelect: (aircraftId: string) => void
+}) {
   if (fleet.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: space.xxl, color: theme.textTertiary }}>
@@ -235,11 +255,14 @@ function FleetGrid({ fleet, theme }: { fleet: OwnedAircraft[]; theme: any }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm }}>
       {sorted.map(aircraft => {
-        const rarity = RARITY_COLORS[aircraft.rarity] ?? RARITY_COLORS.economy
+        const rarity   = RARITY_COLORS[aircraft.rarity] ?? RARITY_COLORS.economy
+        const isActive = aircraft.id === activeAircraftId
         return (
           <div key={aircraft.id} style={{
             background: theme.bgCard, borderRadius: radius.lg,
-            border: aircraft.rarity === 'founder' ? `1px solid ${rarity.text}` : `0.5px solid ${theme.border}`,
+            border: isActive
+              ? `2px solid ${theme.bgPrimary}`
+              : aircraft.rarity === 'founder' ? `1px solid ${rarity.text}` : `0.5px solid ${theme.border}`,
             padding: space.lg,
             position: 'relative', overflow: 'hidden',
           }}>
@@ -267,16 +290,31 @@ function FleetGrid({ fleet, theme }: { fleet: OwnedAircraft[]; theme: any }) {
             <div style={{ fontSize: font.xs, color: theme.textSecondary, lineHeight: 1.5, marginBottom: space.sm }}>
               {aircraft.description}
             </div>
-            <div style={{ display: 'flex', gap: space.sm, alignItems: 'center' }}>
-              {aircraft.flownIrl && (
-                <span style={{ fontSize: 10, color: theme.textSuccess, fontWeight: 600 }}>✓ Flown</span>
-              )}
-              <span style={{ fontSize: 10, color: theme.textTertiary }}>
-                {aircraft.source === 'starter' ? 'Starter aircraft' :
-                 aircraft.source === 'founder' ? 'Founder reward' :
-                 aircraft.source === 'referral' ? 'Referral reward' :
-                 `Acquired ${new Date(aircraft.acquiredAt).toLocaleDateString()}`}
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: space.sm, alignItems: 'center' }}>
+                {aircraft.flownIrl && (
+                  <span style={{ fontSize: 10, color: theme.textSuccess, fontWeight: 600 }}>✓ Flown</span>
+                )}
+                <span style={{ fontSize: 10, color: theme.textTertiary }}>
+                  {aircraft.source === 'starter' ? 'Starter aircraft' :
+                   aircraft.source === 'founder' ? 'Founder reward' :
+                   aircraft.source === 'referral' ? 'Referral reward' :
+                   `Acquired ${new Date(aircraft.acquiredAt).toLocaleDateString()}`}
+                </span>
+              </div>
+              <button
+                onClick={() => onSelect(aircraft.id)}
+                disabled={isActive}
+                style={{
+                  padding: '6px 16px', borderRadius: radius.md, border: 'none',
+                  background: isActive ? theme.bgCardAlt : theme.bgPrimary,
+                  color: isActive ? theme.textTertiary : '#fff',
+                  fontSize: font.xs, fontWeight: 700,
+                  cursor: isActive ? 'default' : 'pointer',
+                }}
+              >
+                {isActive ? '✓ Flying this' : 'Fly this'}
+              </button>
             </div>
           </div>
         )

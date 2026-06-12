@@ -31,11 +31,10 @@ export default function BoardingPassScreen({
   const { theme }       = useThemeStore()
   const { user }        = useAuthStore()
   const { activeThemeId, load: loadTheme } = useBoardingPassThemeStore()
-  const { fleet, activeAircraftId, load: loadAircraft, setActiveAircraft } = useActiveAircraftStore()
+  const { fleet, activeAircraftId, load: loadAircraft } = useActiveAircraftStore()
   const { hasPendingUpgrade, consumePendingUpgrade } = useUpgradeStore()
   const [tearing, setTearing] = useState(false)
   const [torn, setTorn]       = useState(false)
-  const [showAircraftPicker, setShowAircraftPicker] = useState(false)
 
   useEffect(() => {
     if (user?.id) {
@@ -206,22 +205,17 @@ export default function BoardingPassScreen({
           transform: tearing ? 'translateY(8px) rotate(1deg)' : 'none',
           transition: 'transform 0.4s ease',
         }}>
-          {/* Aircraft selector */}
-          <div
-            onClick={() => setShowAircraftPicker(true)}
-            style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              borderBottom: `0.5px solid ${pass.text}33`, paddingBottom: space.sm, marginBottom: space.md,
-              cursor: 'pointer',
-            }}
-          >
+          {/* Aircraft display */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            borderBottom: `0.5px solid ${pass.text}33`, paddingBottom: space.sm, marginBottom: space.md,
+          }}>
             <div>
               <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>AIRCRAFT</div>
               <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.text }}>
                 {activeAircraft?.name ?? 'Cessna 172 Skyhawk'}
               </div>
             </div>
-            <div style={{ fontSize: font.xs, color: pass.text, opacity: 0.5 }}>change ›</div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: space.md, marginBottom: space.md }}>
@@ -289,80 +283,6 @@ export default function BoardingPassScreen({
         }}>
           ← Choose a different flight
         </button>
-      )}
-
-      {/* Aircraft picker sheet */}
-      {showAircraftPicker && (
-        <div
-          onClick={() => setShowAircraftPicker(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: '100%', maxWidth: 480,
-              background: theme.bgCard,
-              borderRadius: `${radius.xl}px ${radius.xl}px 0 0`,
-              padding: `${space.xl}px ${space.lg}px`,
-              maxHeight: '70vh',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ textAlign: 'center', marginBottom: space.lg }}>
-              <div style={{ fontSize: font.lg, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>
-                Choose your aircraft
-              </div>
-              <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 4 }}>
-                Pick a plane from your fleet for this flight
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm }}>
-              {fleet.map(aircraft => {
-                const isActive = aircraft.id === activeAircraftId
-                return (
-                  <button
-                    key={aircraft.id}
-                    onClick={async () => {
-                      if (user?.id) await setActiveAircraft(user.id, aircraft.id)
-                      setShowAircraftPicker(false)
-                    }}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      width: '100%', textAlign: 'left',
-                      background: isActive ? theme.bgSuccess : theme.bgCardAlt,
-                      border: `${isActive ? '2px' : '0.5px'} solid ${isActive ? theme.bgPrimary : theme.border}`,
-                      borderRadius: radius.lg, padding: `${space.md}px ${space.lg}px`,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: font.sm, fontWeight: 700, color: theme.text }}>{aircraft.name}</div>
-                      <div style={{ fontSize: font.xs, color: theme.textTertiary, marginTop: 2 }}>
-                        {aircraft.manufacturer}
-                        {aircraft.rarity === 'founder' && (
-                          <span style={{ color: '#C9A227', fontWeight: 700 }}> · FOUNDER</span>
-                        )}
-                      </div>
-                    </div>
-                    {isActive && <span style={{ fontSize: font.sm, color: theme.textSuccess, fontWeight: 700 }}>✓</span>}
-                  </button>
-                )
-              })}
-            </div>
-
-            {fleet.length <= 1 && (
-              <div style={{ textAlign: 'center', marginTop: space.lg, fontSize: font.xs, color: theme.textTertiary }}>
-                Visit the Hangar to add more aircraft to your fleet
-              </div>
-            )}
-          </div>
-        </div>
       )}
     </div>
   )
