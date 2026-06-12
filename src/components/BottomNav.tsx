@@ -9,6 +9,19 @@ interface Props {
   hasActiveSession?: boolean
 }
 
+// Simple propeller — center hub circle with 4 elongated blades
+function PropellerIcon({ color }: { color: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="12" cy="6"  rx="2.2" ry="5.5" fill={color} />
+      <ellipse cx="18" cy="12" rx="5.5" ry="2.2" fill={color} />
+      <ellipse cx="12" cy="18" rx="2.2" ry="5.5" fill={color} />
+      <ellipse cx="6"  cy="12" rx="5.5" ry="2.2" fill={color} />
+      <circle  cx="12" cy="12" r="2.6" fill={color} />
+    </svg>
+  )
+}
+
 export default function BottomNav({ active, onNavigate, hasActiveSession }: Props) {
   const { theme } = useThemeStore()
 
@@ -63,11 +76,15 @@ export default function BottomNav({ active, onNavigate, hasActiveSession }: Prop
                 background: theme.accentAlt,
               }} />
             )}
-            <span style={{
-              fontSize: 18,
-              color: isActive ? theme.navActive : theme.navInactive,
-              transition: 'color 0.3s',
-            }}>{tab.icon}</span>
+            {tab.id === 'hangar' ? (
+              <PropellerIcon color={isActive ? theme.navActive : theme.navInactive} />
+            ) : (
+              <span style={{
+                fontSize: 18,
+                color: isActive ? theme.navActive : theme.navInactive,
+                transition: 'color 0.3s',
+              }}>{tab.icon}</span>
+            )}
             <span style={{
               fontSize: 10,
               fontWeight: isActive ? 600 : 400,
