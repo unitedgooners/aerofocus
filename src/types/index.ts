@@ -19,6 +19,7 @@ export interface Flight {
   lat: number
   lng: number
   altitude: number
+  heading?: number
   status: FlightStatus
   lastUpdated: string
 }
@@ -56,6 +57,9 @@ export interface UserProfile {
   totalFocusMinutes: number
   totalFlights: number
   totalDistanceKm: number
+  cashBalance: number        // ← add this
+  referralCode: string       // ← add this
+  signupNumber: number | null // ← add this
   createdAt: string
 }
 

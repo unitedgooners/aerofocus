@@ -11,6 +11,7 @@ import type { PomoCfg } from '../hooks/usePomodoro'
 interface Props {
   onBoard: (flight: Flight, mode: StudyMode, subject: string, pomoCfg?: PomoCfg, wantsChain?: boolean) => void
   onUpgrade: () => void
+  onHangar: () => void
 }
 
 type Step = 'mode' | 'settings' | 'flight'
@@ -39,7 +40,7 @@ function calcTarget(mode: StudyMode, cfg: PomoCfg, blockCount: number, targetDur
   return targetDuration
 }
 
-export default function HomeScreen({ onBoard, onUpgrade }: Props) {
+export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
   const { user, logout }    = useAuthStore()
   const { theme }           = useThemeStore()
   const { flights, isLoading, error, lastFetched, isPremium } = useFlightPool()
@@ -123,6 +124,9 @@ export default function HomeScreen({ onBoard, onUpgrade }: Props) {
             <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>{user?.username}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: space.sm }}>
+            <div onClick={onHangar} style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600, cursor: 'pointer' }}>
+              ${(user?.cashBalance ?? 0).toFixed(2)} 🛩
+            </div>
             <div style={{ background: theme.bgWarning, color: theme.textWarning, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
               🔥 {user?.streakDays} days
             </div>
@@ -145,6 +149,33 @@ export default function HomeScreen({ onBoard, onUpgrade }: Props) {
             </div>
           ))}
         </div>
+
+        {/* Referral card — first 500 referrals win a Wright Model B */}
+        {user?.referralCode && (
+          <div
+            onClick={() => {
+              const link = `${window.location.origin}?ref=${user.referralCode}`
+              navigator.clipboard?.writeText(link)
+              alert('Referral link copied! Share it with a friend ✈')
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: space.md,
+              background: theme.bgCard, border: `0.5px solid ${theme.border}`,
+              borderRadius: radius.lg, padding: `${space.md}px ${space.lg}px`,
+              marginBottom: space.xl, cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 20 }}>🎁</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: font.sm, fontWeight: 600, color: theme.text }}>
+                Invite a friend, win a Wright Model B
+              </div>
+              <div style={{ fontSize: font.xs, color: theme.textTertiary, marginTop: 2 }}>
+                Your code: <strong style={{ color: theme.textAccent, letterSpacing: 1 }}>{user.referralCode}</strong> · tap to copy your link
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step indicator */}
         <div style={{ display: 'flex', gap: space.sm, marginBottom: space.xl }}>

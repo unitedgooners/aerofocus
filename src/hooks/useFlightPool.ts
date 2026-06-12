@@ -13,6 +13,7 @@ import { fetchUSFlights, filterFreeTierPool, pickRandomFlight } from '../api/ope
 import { MOCK_FREE_POOL } from '../mock/data'
 import { USE_MOCK_DATA } from '../utils/config'
 import { useAuthStore } from '../store/authStore'
+import { useEffectivePremium } from './useEffectivePremium'
 import type { Flight } from '../types'
 
 const REFRESH_INTERVAL_MS = 10 * 60 * 1000  // 10 minutes
@@ -33,7 +34,7 @@ export function useFlightPool(): UseFlightPoolReturn {
   const [error, setError]             = useState<string | null>(null)
   const [lastFetched, setLastFetched] = useState<Date | null>(null)
   const { user }                      = useAuthStore()
-  const isPremium                     = user?.tier === 'premium'
+  const isPremium                     = useEffectivePremium()
 
   const load = useCallback(async () => {
     setIsLoading(true)

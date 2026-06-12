@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useSessionStore } from '../store/sessionStore'
+import { useAuthStore } from '../store/authStore'
+import { useEffectivePremium } from '../hooks/useEffectivePremium'
 import { useThemeStore } from '../store/themeStore'
+import LiveFlightMap from '../components/LiveFlightMap'
 import { usePomodoro } from '../hooks/usePomodoro'
 import { simulateFlightUpdate } from '../mock/data'
 import { POLL_INTERVAL_MS } from '../utils/config'
@@ -36,6 +39,8 @@ function playChime() {
 export default function LiveSessionScreen({ onEnd }: Props) {
   const { activeSession, endSession, updateProgress } = useSessionStore()
   const { theme, setFlying, setBreak, setResumed, setLanded } = useThemeStore()
+  const { user } = useAuthStore()
+  const isPremium = useEffectivePremium()
 
   const [flight, setFlight]     = useState<Flight | null>(activeSession?.flight ?? null)
   const [elapsed, setElapsed]   = useState(0)
@@ -312,6 +317,28 @@ export default function LiveSessionScreen({ onEnd }: Props) {
             </span>
           </div>
         </div>
+
+        {/* Live flight map — premium only */}
+        {!isTaxiing && (
+          isPremium ? (
+            <div style={{ marginBottom: space.md, borderRadius: radius.lg, overflow: 'hidden', border: `0.5px solid ${theme.border}` }}>
+              <LiveFlightMap lat={flight.lat} lng={flight.lng} heading={flight.heading ?? 0} />
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: space.md,
+              background: theme.bgCard, border: `0.5px dashed ${theme.border}`,
+              borderRadius: radius.lg, padding: `${space.md}px ${space.lg}px`,
+              marginBottom: space.md, opacity: 0.7,
+            }}>
+              <span style={{ fontSize: 20 }}>🗺</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: font.sm, color: theme.textSecondary, fontWeight: 500 }}>Live flight map · Premium 🔒</div>
+                <div style={{ fontSize: font.xs, color: theme.textTertiary, marginTop: 2 }}>Track your real position on a live map</div>
+              </div>
+            </div>
+          )
+        )}
 
         {/* ── POMODORO UI ───────────────────────────────────────────────────── */}
         {activeSession.mode === 'pomodoro' && (

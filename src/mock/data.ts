@@ -68,6 +68,9 @@ export const MOCK_USER: UserProfile = {
   totalFocusMinutes: 2832,
   totalFlights: 31,
   totalDistanceKm: 28440,
+  cashBalance: 25,        // ← add
+  referralCode: 'DEMO01', // ← add
+  signupNumber: 1,        // ← add
   createdAt: new Date(Date.now() - 60 * 24 * 3600000).toISOString(),
 }
 

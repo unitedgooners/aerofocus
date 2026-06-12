@@ -1,7 +1,7 @@
 import React from 'react'
 import { useThemeStore } from '../store/themeStore'
 
-type Tab = 'home' | 'live' | 'crew' | 'logbook'
+type Tab = 'home' | 'live' | 'crew' | 'logbook' | 'hangar'
 
 interface Props {
   active: Tab

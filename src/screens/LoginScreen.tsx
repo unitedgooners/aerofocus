@@ -11,6 +11,11 @@ export default function LoginScreen({ onSuccess }: Props) {
   const [email, setEmail]              = useState('')
   const [password, setPassword]        = useState('')
   const [username, setUsername]        = useState('')
+  const [referralCode, setReferralCode] = useState(() => {
+    // Pick up ?ref=CODE from the URL if present
+    const params = new URLSearchParams(window.location.search)
+    return params.get('ref')?.toUpperCase() ?? ''
+  })
   const [awaitingConfirm, setAwaiting] = useState(false)
   const [resetSent, setResetSent]      = useState(false)
   const [showReset, setShowReset]      = useState(false)
@@ -23,7 +28,7 @@ export default function LoginScreen({ onSuccess }: Props) {
   const handle = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSignup) {
-      await signup(email, password, username)
+      await signup(email, password, username, referralCode)
       if (!useAuthStore.getState().error) setAwaiting(true)
     } else {
       await login(email, password)
@@ -230,6 +235,25 @@ export default function LoginScreen({ onSuccess }: Props) {
                   </button>
               }
             </div>
+
+            {isSignup && (
+              <div>
+                <label style={{ fontSize: font.xs, fontWeight: 600, color: theme.textTertiary, letterSpacing: 0.5, display: 'block', marginBottom: space.xs }}>
+                  REFERRAL CODE <span style={{ fontWeight: 400, color: theme.textTertiary }}>(optional)</span>
+                </label>
+                <input
+                  type="text" placeholder="ABC123" value={referralCode}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReferralCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  style={{ width: '100%', padding: '13px 14px', borderRadius: radius.md, border: `0.5px solid ${theme.borderMed}`, background: theme.bgInput, color: theme.text, fontSize: font.md, outline: 'none', letterSpacing: 2, textTransform: 'uppercase' }}
+                />
+                {referralCode && (
+                  <div style={{ fontSize: 10, color: theme.textAccent, marginTop: 4 }}>
+                    ✓ Applied — your friend gets credit for inviting you
+                  </div>
+                )}
+              </div>
+            )}
 
             <button type="submit" disabled={isLoading} style={{
               width: '100%', padding: 15, marginTop: space.xs,

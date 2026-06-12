@@ -11,11 +11,13 @@ import CrewScreen from './screens/CrewScreen'
 import LogbookScreen from './screens/LogbookScreen'
 import ResetPasswordScreen from './screens/ResetPasswordScreen'
 import UpgradeScreen from './screens/UpgradeScreen'
+import HangarScreen from './screens/HangarScreen'
+import { useUpgradeStore } from './store/upgradeStore'
 import BottomNav from './components/BottomNav'
 import type { Flight, Session, StudyMode } from './types'
 import type { PomoCfg } from './hooks/usePomodoro'
 
-type Tab = 'home' | 'boarding' | 'live' | 'crew' | 'logbook'
+type Tab = 'home' | 'boarding' | 'live' | 'crew' | 'logbook' | 'hangar'
 
 interface BoardingInfo {
   flight: Flight
@@ -35,6 +37,7 @@ export default function App() {
   const [showShare, setShowShare]        = useState(false)
   const [showUpgrade, setShowUpgrade]    = useState(false)
   const [isReset, setIsReset]            = useState(false)
+  const { isTemporarilyPremium, justUpgraded, checkDailyRoll, dismissCelebration } = useUpgradeStore()
 
   useEffect(() => {
     loadSession()
@@ -51,6 +54,13 @@ export default function App() {
       setTimeout(() => refreshProfile(), 2000)
     }
   }, [])
+
+  // Roll for a random daily upgrade once the user is loaded
+  useEffect(() => {
+    if (user?.id && user.tier === 'free') {
+      checkDailyRoll(user.id)
+    }
+  }, [user?.id])
 
   if (isLoading) return (
     <div style={{ minHeight: '100vh', background: '#F5F7FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -73,6 +83,10 @@ export default function App() {
       session={lastSession}
       onHome={() => { setShowShare(false); setTab('home'); setLight() }}
     />
+  )
+
+  if (tab === 'hangar') return (
+    <HangarScreen onBack={() => setTab('home')} />
   )
 
   if (tab === 'boarding' && boarding) return (
@@ -126,7 +140,7 @@ export default function App() {
       } else {
         setLight(); setTab(t)
       }
-    } else if (tab === 'boarding' && t !== 'boarding') {
+    } else if (tab === 'boarding' && t !== tab) {
       setLight(); setTab(t)
     } else {
       setTab(t)
@@ -135,19 +149,54 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
-      {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} />}
+      {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
       {tab === 'crew'    && <CrewScreen />}
       {tab === 'logbook' && <LogbookScreen />}
 
       <BottomNav
-        active={tab === 'boarding' || tab === 'live' ? 'live' : tab as any}
+        active={tab === 'boarding' || tab === 'live' ? 'live' : (tab as 'home' | 'crew' | 'logbook')}
         onNavigate={navigate}
         hasActiveSession={!!activeSession}
       />
 
       {/* Upgrade modal — shown over any screen */}
       {showUpgrade && <UpgradeScreen onClose={() => setShowUpgrade(false)} />}
+
+      {/* Random upgrade celebration — shown once when the daily roll succeeds */}
+      {justUpgraded && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(13,2,33,0.85)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2000, padding: 24,
+        }}>
+          <div style={{
+            background: '#1A0533',
+            border: '1px solid #9D4EDD',
+            borderRadius: 20,
+            padding: '32px 24px',
+            textAlign: 'center',
+            maxWidth: 380,
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: -0.5, marginBottom: 8 }}>
+              You've been upgraded!
+            </div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: 20 }}>
+              Enjoy 24 hours of First Class — every premium feature unlocked,
+              plus an exclusive boarding pass design. On us.
+            </div>
+            <button onClick={dismissCelebration} style={{
+              width: '100%', padding: 14, borderRadius: 12, border: 'none',
+              background: '#9D4EDD', color: '#fff',
+              fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            }}>
+              Let's fly ✈
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
