@@ -85,10 +85,6 @@ export default function App() {
     />
   )
 
-  if (tab === 'hangar') return (
-    <HangarScreen onBack={() => setTab('home')} />
-  )
-
   if (tab === 'boarding' && boarding) return (
     <BoardingPassScreen
       flight={boarding.flight}
@@ -151,11 +147,12 @@ export default function App() {
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
       {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
+      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} />}
       {tab === 'crew'    && <CrewScreen />}
       {tab === 'logbook' && <LogbookScreen />}
 
       <BottomNav
-        active={tab === 'boarding' || tab === 'live' ? 'live' : (tab as 'home' | 'crew' | 'logbook')}
+        active={tab === 'boarding' || tab === 'live' ? 'live' : (tab as 'home' | 'crew' | 'logbook' | 'hangar')}
         onNavigate={navigate}
         hasActiveSession={!!activeSession}
       />

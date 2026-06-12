@@ -124,8 +124,8 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
             <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>{user?.username}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: space.sm }}>
-            <div onClick={onHangar} style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600, cursor: 'pointer' }}>
-              ${(user?.cashBalance ?? 0).toFixed(2)} 🛩
+            <div style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
+              ${(user?.cashBalance ?? 0).toFixed(2)}
             </div>
             <div style={{ background: theme.bgWarning, color: theme.textWarning, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
               🔥 {user?.streakDays} days

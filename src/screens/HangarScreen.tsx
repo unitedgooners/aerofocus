@@ -135,9 +135,6 @@ export default function HangarScreen({ onBack }: Props) {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: space.md, marginBottom: space.lg }}>
-          <button onClick={onBack} style={{ background: 'none', border: 'none', color: theme.textAccent, fontSize: font.lg, cursor: 'pointer', padding: 0 }}>
-            ←
-          </button>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>Hangar</div>
             <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2 }}>Your fleet, your collection</div>

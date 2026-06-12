@@ -15,6 +15,7 @@ export default function BottomNav({ active, onNavigate, hasActiveSession }: Prop
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'home',    label: 'Home',    icon: '⌂' },
     { id: 'live',    label: 'Fly',     icon: '✈' },
+    { id: 'hangar',  label: 'Hangar',  icon: '🛩' },
     { id: 'crew',    label: 'Crew',    icon: '◎' },
     { id: 'logbook', label: 'Logbook', icon: '▦' },
   ]
