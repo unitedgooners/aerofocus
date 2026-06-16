@@ -14,6 +14,7 @@ import {
 import { useBoardingPassThemeStore } from '../store/boardingPassThemeStore'
 import { useActiveAircraftStore } from '../store/activeAircraftStore'
 import FleetCarousel from '../components/FleetCarousel'
+import { AIRCRAFT_IMAGES } from '../data/aircraftImages'
 
 interface Props {
   onBack: () => void
@@ -114,18 +115,19 @@ export default function HangarScreen({ onBack }: Props) {
     setTimeout(() => setToast(''), 2500)
   }
 
-  // Sort shop: purchasable first by price, founder-only items at the end
+  // Sort shop: purchasable first by price, founder-only items at the end.
+  // Owned aircraft are excluded entirely — once bought, it belongs in the Fleet tab, not the Shop.
   const shopItems = [...catalog]
-    .filter(a => a.rarity !== 'starter')
+    .filter(a => a.rarity !== 'starter' && !ownedIds.has(a.id))
     .sort((a, b) => {
       if (a.price === null && b.price !== null) return 1
       if (a.price !== null && b.price === null) return -1
       return (a.price ?? 0) - (b.price ?? 0)
     })
 
-  // Sort theme shop the same way
+  // Sort theme shop the same way — owned themes excluded too
   const themeShopItems = [...themeCatalog]
-    .filter(t => t.rarity !== 'starter')
+    .filter(t => t.rarity !== 'starter' && !ownedThemeIds.has(t.id))
     .sort((a, b) => {
       if (a.price === null && b.price !== null) return 1
       if (a.price !== null && b.price === null) return -1
@@ -169,8 +171,8 @@ export default function HangarScreen({ onBack }: Props) {
           {(['fleet', 'shop', 'themes'] as const).map(t => {
             const active = tab === t
             const count  = t === 'fleet' ? fleet.length
-                         : t === 'shop'  ? shopItems.filter(a => !ownedIds.has(a.id)).length
-                         : themeShopItems.filter(th => !ownedThemeIds.has(th.id)).length
+                         : t === 'shop'  ? shopItems.length
+                         : themeShopItems.length
             const label  = t === 'fleet' ? 'Fleet' : t === 'shop' ? 'Shop' : 'Themes'
             return (
               <button key={t} onClick={() => setTab(t)} style={{
@@ -251,6 +253,8 @@ function ShopGrid({
   onBuy: (a: AircraftModel) => void
   theme: any
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm }}>
       {items.map(aircraft => {
@@ -258,6 +262,8 @@ function ShopGrid({
         const rarity      = RARITY_COLORS[aircraft.rarity] ?? RARITY_COLORS.economy
         const isFounder   = aircraft.price === null
         const canAfford   = aircraft.price !== null && balance >= aircraft.price
+        const isExpanded  = expandedId === aircraft.id
+        const img         = AIRCRAFT_IMAGES[aircraft.id]
 
         return (
           <div key={aircraft.id} style={{
@@ -266,7 +272,10 @@ function ShopGrid({
             padding: space.lg,
             opacity: owned ? 0.55 : 1,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.sm }}>
+            <div
+              onClick={() => setExpandedId(isExpanded ? null : aircraft.id)}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.sm, cursor: 'pointer' }}
+            >
               <div>
                 <div style={{ fontSize: font.md, fontWeight: 700, color: theme.text, letterSpacing: -0.3 }}>{aircraft.name}</div>
                 <div style={{ fontSize: font.xs, color: theme.textTertiary, marginTop: 2 }}>
@@ -277,6 +286,34 @@ function ShopGrid({
                 {aircraft.rarity}
               </div>
             </div>
+
+            {/* Expandable image reveal */}
+            <div style={{
+              maxHeight: isExpanded ? 220 : 0,
+              overflow: 'hidden',
+              borderRadius: radius.md,
+              marginBottom: isExpanded ? space.md : 0,
+              transition: 'max-height 0.3s ease, margin-bottom 0.3s ease',
+            }}>
+              {img ? (
+                <img
+                  src={img}
+                  alt={aircraft.name}
+                  onClick={() => setExpandedId(null)}
+                  style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+                />
+              ) : (
+                <div style={{
+                  width: '100%', height: 220,
+                  background: theme.bgCardAlt,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 40, opacity: 0.4,
+                }}>
+                  ✈
+                </div>
+              )}
+            </div>
+
             <div style={{ fontSize: font.xs, color: theme.textSecondary, lineHeight: 1.5, marginBottom: space.md }}>
               {aircraft.description}
             </div>
