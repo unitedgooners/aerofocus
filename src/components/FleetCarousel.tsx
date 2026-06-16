@@ -119,7 +119,7 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
           gap: 16,
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          padding: '8px 20px 4px',
+          padding: '8px calc((100% - min(78%, 280px)) / 2) 4px',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
         }}
