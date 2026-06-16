@@ -8,6 +8,17 @@ interface Props {
   theme: any
 }
 
+// Some illustrations are landscape-oriented and need a custom crop focus
+// within the portrait card frame so the aircraft itself stays centered
+// rather than getting cut off by a naive center-crop.
+const IMAGE_FOCUS: Record<string, string> = {
+  p51:     'center 40%',
+  sr71:    'center 55%',
+  concorde:'center 35%',
+  zero:    'center 30%',
+  dc3:     'center 60%',
+}
+
 // Maps aircraft id -> illustration filename in /public/aircraft/
 // Falls back to a placeholder gradient if no image exists yet for that id.
 const AIRCRAFT_IMAGES: Record<string, string> = {
@@ -56,9 +67,41 @@ const ERA_LABELS: Record<string, string> = {
   'wide-body': 'Wide-body',
 }
 
+// Quick collectible facts shown in the detail modal — kept short and punchy
+const AIRCRAFT_FACTS: Record<string, { firstFlight: string; topSpeed: string; fact: string }> = {
+  cessna172:    { firstFlight: '1956', topSpeed: '140 mph',    fact: 'The best-selling aircraft in history, with over 44,000 built.' },
+  piper_cub:    { firstFlight: '1938', topSpeed: '87 mph',     fact: 'Taught more pilots to fly than any other aircraft in history.' },
+  cub:          { firstFlight: '1938', topSpeed: '87 mph',     fact: 'Taught more pilots to fly than any other aircraft in history.' },
+  dc3:          { firstFlight: '1935', topSpeed: '230 mph',    fact: 'Some DC-3s are still flying cargo routes nearly 90 years later.' },
+  e175:         { firstFlight: '2003', topSpeed: '530 mph',    fact: 'A regional workhorse connecting smaller cities to major hubs.' },
+  b737:         { firstFlight: '1967', topSpeed: '588 mph',    fact: 'The best-selling commercial jet airliner ever produced.' },
+  a320:         { firstFlight: '1987', topSpeed: '537 mph',    fact: 'The first airliner with a fully digital fly-by-wire system.' },
+  b787:         { firstFlight: '2009', topSpeed: '594 mph',    fact: 'Built largely from lightweight composite materials, not aluminum.' },
+  a350:         { firstFlight: '2013', topSpeed: '561 mph',    fact: 'Designed to be 25% more fuel-efficient than the planes it replaced.' },
+  b747:         { firstFlight: '1969', topSpeed: '614 mph',    fact: 'Held the title of largest passenger aircraft for 37 years.' },
+  a380:         { firstFlight: '2005', topSpeed: '587 mph',    fact: 'The largest passenger airliner ever built, with two full decks.' },
+  concorde:     { firstFlight: '1969', topSpeed: '1,354 mph',  fact: 'Could cross the Atlantic in under 3.5 hours — twice the speed of sound.' },
+  wright_flyer: { firstFlight: '1903', topSpeed: '30 mph',     fact: 'The first powered, controlled, sustained flight in human history.' },
+  wright_b:     { firstFlight: '1910', topSpeed: '40 mph',     fact: 'The first mass-produced airplane, used to train early military pilots.' },
+  wright_model_b:{ firstFlight: '1910', topSpeed: '40 mph',    fact: 'The first mass-produced airplane, used to train early military pilots.' },
+  spad:         { firstFlight: '1917', topSpeed: '135 mph',    fact: 'Flown by WWI flying ace Eddie Rickenbacker.' },
+  spitfire:     { firstFlight: '1936', topSpeed: '370 mph',    fact: 'Its elliptical wing design became instantly iconic.' },
+  p51:          { firstFlight: '1940', topSpeed: '440 mph',    fact: 'Escorted bombers deep into enemy territory and back.' },
+  zero:         { firstFlight: '1939', topSpeed: '331 mph',    fact: 'Dominated early Pacific air combat with its agility.' },
+  bf109:        { firstFlight: '1935', topSpeed: '385 mph',    fact: 'The most produced fighter aircraft in history, over 33,000 built.' },
+  b17:          { firstFlight: '1935', topSpeed: '287 mph',    fact: 'Famous for limping home despite catastrophic battle damage.' },
+  f86:          { firstFlight: '1947', topSpeed: '687 mph',    fact: 'Dominated the world\'s first jet-versus-jet dogfights over Korea.' },
+  f4:           { firstFlight: '1958', topSpeed: '1,473 mph',  fact: 'Held 16 world speed and altitude records when introduced.' },
+  sr71:         { firstFlight: '1964', topSpeed: '2,193 mph',  fact: 'Still holds the record for fastest air-breathing manned aircraft.' },
+  mig29:        { firstFlight: '1977', topSpeed: '1,520 mph',  fact: 'Built for tight, high-G dogfighting maneuvers.' },
+  f22:          { firstFlight: '1997', topSpeed: '1,500 mph',  fact: 'Combines stealth, speed, and agility unmatched by any rival.' },
+  b2:           { firstFlight: '1989', topSpeed: '630 mph',    fact: 'Its flying-wing shape makes it nearly invisible to radar.' },
+}
+
 export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme }: Props) {
   const trackRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [detailAircraft, setDetailAircraft] = useState<OwnedAircraft | null>(null)
 
   // Keep the carousel's "centered" card in sync with scroll position,
   // used to scale/dim neighboring cards for the peek effect. Finds whichever
@@ -119,7 +162,7 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
           gap: 16,
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          padding: '8px calc((100% - min(78%, 280px)) / 2) 4px',
+          padding: '8px calc((100% - min(86%, 340px)) / 2) 4px',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
         }}
@@ -135,11 +178,11 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
             <div
               key={aircraft.id}
               style={{
-                flex: '0 0 78%',
-                maxWidth: 280,
+                flex: '0 0 86%',
+                maxWidth: 340,
                 scrollSnapAlign: 'center',
-                transform: isFocused ? 'scale(1)' : 'scale(0.91)',
-                opacity: isFocused ? 1 : 0.55,
+                transform: isFocused ? 'scale(1)' : 'scale(0.88)',
+                opacity: isFocused ? 1 : 0.5,
                 transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease',
               }}
             >
@@ -160,10 +203,13 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
                   <img
                     src={img}
                     alt={aircraft.name}
+                    onClick={() => setDetailAircraft(aircraft)}
                     style={{
                       position: 'absolute', inset: 0,
                       width: '100%', height: '100%',
                       objectFit: 'cover',
+                      objectPosition: IMAGE_FOCUS[aircraft.id] ?? 'center center',
+                      cursor: 'pointer',
                     }}
                   />
                 ) : (
@@ -276,6 +322,113 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
           />
         ))}
       </div>
+
+      {/* Detail modal — tap a card's image to open */}
+      {detailAircraft && (
+        <div
+          onClick={() => setDetailAircraft(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(5,5,10,0.82)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 380,
+              maxHeight: '88vh', overflowY: 'auto',
+              borderRadius: 24,
+              background: theme.bgCard,
+              border: `2px solid ${(RARITY_STYLE[detailAircraft.rarity] ?? RARITY_STYLE.economy).frame}`,
+              boxShadow: `0 30px 60px -10px rgba(0,0,0,0.5)`,
+            }}
+          >
+            {(() => {
+              const img = AIRCRAFT_IMAGES[detailAircraft.id]
+              const rarity = RARITY_STYLE[detailAircraft.rarity] ?? RARITY_STYLE.economy
+              const facts = AIRCRAFT_FACTS[detailAircraft.id]
+              return (
+                <>
+                  <div style={{ position: 'relative', aspectRatio: '4 / 3', overflow: 'hidden', borderRadius: '22px 22px 0 0' }}>
+                    {img ? (
+                      <img src={img} alt={detailAircraft.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: `linear-gradient(160deg, ${rarity.frame}55, #1a1a24 70%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, opacity: 0.5 }}>✈</div>
+                    )}
+                    <button
+                      onClick={() => setDetailAircraft(null)}
+                      style={{
+                        position: 'absolute', top: 12, right: 12,
+                        width: 32, height: 32, borderRadius: '50%',
+                        border: 'none', background: 'rgba(0,0,0,0.5)', color: '#fff',
+                        fontSize: 16, cursor: 'pointer',
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div style={{ padding: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: '#0c0c14', background: rarity.label, padding: '3px 9px', borderRadius: 20, textTransform: 'uppercase' }}>
+                        {detailAircraft.rarity}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: theme.text, letterSpacing: -0.4 }}>{detailAircraft.name}</div>
+                    <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 2 }}>
+                      {detailAircraft.manufacturer} · {ERA_LABELS[detailAircraft.era] ?? detailAircraft.era}
+                    </div>
+
+                    {detailAircraft.description && (
+                      <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 1.6, marginTop: 12 }}>
+                        {detailAircraft.description}
+                      </div>
+                    )}
+
+                    {facts && (
+                      <>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                          <div style={{ flex: 1, background: theme.bgCardAlt, borderRadius: 12, padding: '10px 12px' }}>
+                            <div style={{ fontSize: 9, color: theme.textTertiary, letterSpacing: 0.5, marginBottom: 3 }}>FIRST FLIGHT</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{facts.firstFlight}</div>
+                          </div>
+                          <div style={{ flex: 1, background: theme.bgCardAlt, borderRadius: 12, padding: '10px 12px' }}>
+                            <div style={{ fontSize: 9, color: theme.textTertiary, letterSpacing: 0.5, marginBottom: 3 }}>TOP SPEED</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: theme.text }}>{facts.topSpeed}</div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: theme.textTertiary, lineHeight: 1.6, marginTop: 12, fontStyle: 'italic' }}>
+                          {facts.fact}
+                        </div>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        onSelect(detailAircraft.id)
+                        setDetailAircraft(null)
+                      }}
+                      disabled={detailAircraft.id === activeAircraftId}
+                      style={{
+                        marginTop: 18, width: '100%', padding: '12px 0',
+                        borderRadius: 12, border: 'none',
+                        background: detailAircraft.id === activeAircraftId ? theme.bgCardAlt : rarity.frame,
+                        color: detailAircraft.id === activeAircraftId ? theme.textTertiary : '#0c0c14',
+                        fontSize: 13, fontWeight: 700,
+                        cursor: detailAircraft.id === activeAircraftId ? 'default' : 'pointer',
+                      }}
+                    >
+                      {detailAircraft.id === activeAircraftId ? '✓ Currently flying' : 'Fly this aircraft'}
+                    </button>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
 
       <style>{`
         .fleet-carousel-track::-webkit-scrollbar { display: none; }
