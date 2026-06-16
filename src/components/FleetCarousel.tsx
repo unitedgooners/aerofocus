@@ -61,17 +61,31 @@ export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme
   const [activeIndex, setActiveIndex] = useState(0)
 
   // Keep the carousel's "centered" card in sync with scroll position,
-  // used to scale/dim neighboring cards for the peek effect.
+  // used to scale/dim neighboring cards for the peek effect. Finds whichever
+  // card's center is closest to the track's visible center — robust to the
+  // maxWidth cap on wide viewports where a fixed cardWidth estimate drifts.
   useEffect(() => {
     const track = trackRef.current
     if (!track) return
 
     const onScroll = () => {
-      const cardWidth = track.firstElementChild
-        ? (track.firstElementChild as HTMLElement).offsetWidth + 16
-        : 1
-      const idx = Math.round(track.scrollLeft / cardWidth)
-      setActiveIndex(Math.max(0, Math.min(idx, fleet.length - 1)))
+      const trackRect = track.getBoundingClientRect()
+      const trackCenter = trackRect.left + trackRect.width / 2
+
+      let closestIdx = 0
+      let closestDist = Infinity
+
+      Array.from(track.children).forEach((child, i) => {
+        const rect = (child as HTMLElement).getBoundingClientRect()
+        const cardCenter = rect.left + rect.width / 2
+        const dist = Math.abs(cardCenter - trackCenter)
+        if (dist < closestDist) {
+          closestDist = dist
+          closestIdx = i
+        }
+      })
+
+      setActiveIndex(closestIdx)
     }
 
     track.addEventListener('scroll', onScroll, { passive: true })
