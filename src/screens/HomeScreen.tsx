@@ -4,7 +4,7 @@ import { useSessionStore } from '../store/sessionStore'
 import { useThemeStore } from '../store/themeStore'
 import { useFlightPool } from '../hooks/useFlightPool'
 import { MOCK_SESSIONS } from '../mock/data'
-import { space, radius, font } from '../styles/theme'
+import { space, radius, font, fontFamily } from '../styles/theme'
 import type { Flight, StudyMode } from '../types'
 import type { PomoCfg } from '../hooks/usePomodoro'
 
@@ -118,21 +118,32 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
       <div style={{ maxWidth: 480, margin: '0 auto', padding: `${space.xl}px ${space.lg}px 100px` }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.xl }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: space.lg }}>
           <div>
-            <div style={{ fontSize: font.xs, color: theme.textTertiary, marginBottom: 2 }}>Welcome back,</div>
-            <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>{user?.username}</div>
+            <div style={{ fontSize: font.xs, color: theme.textTertiary, marginBottom: 3, letterSpacing: 0.3 }}>Welcome back</div>
+            <div style={{
+              fontFamily: fontFamily.display, fontSize: 30, fontWeight: 600,
+              color: theme.text, letterSpacing: -0.5, lineHeight: 1.1,
+            }}>
+              {user?.username}
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: space.sm }}>
-            <div style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
-              ${(user?.cashBalance ?? 0).toFixed(2)}
-            </div>
-            <div style={{ background: theme.bgWarning, color: theme.textWarning, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
-              🔥 {user?.streakDays} days
-            </div>
-            <button onClick={logout} style={{ background: 'none', border: `0.5px solid ${theme.border}`, color: theme.textTertiary, padding: '5px 12px', borderRadius: radius.pill, fontSize: font.xs, cursor: 'pointer' }}>
-              out
-            </button>
+          <button onClick={logout} style={{
+            background: 'none', border: `0.5px solid ${theme.border}`, color: theme.textTertiary,
+            width: 30, height: 30, borderRadius: '50%', fontSize: 11, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
+          }}>
+            ⏻
+          </button>
+        </div>
+
+        {/* Status pills */}
+        <div style={{ display: 'flex', gap: space.sm, marginBottom: space.xl }}>
+          <div style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '6px 13px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
+            ${(user?.cashBalance ?? 0).toFixed(2)}
+          </div>
+          <div style={{ background: theme.bgWarning, color: theme.textWarning, padding: '6px 13px', borderRadius: radius.pill, fontSize: font.xs, fontWeight: 600 }}>
+            🔥 {user?.streakDays} day streak
           </div>
         </div>
 
@@ -143,9 +154,14 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
             { label: 'Flights',    value: String(user?.totalFlights ?? 0) },
             { label: 'Km flown',   value: `${Math.round((user?.totalDistanceKm ?? 0) / 1000)}k` },
           ].map(s => (
-            <div key={s.label} style={{ background: theme.bgCard, borderRadius: radius.md, padding: space.md, border: `0.5px solid ${theme.border}`, textAlign: 'center' }}>
-              <div style={{ fontSize: font.lg, fontWeight: 700, color: theme.text, letterSpacing: -0.5, marginBottom: 2 }}>{s.value}</div>
-              <div style={{ fontSize: font.xs, color: theme.textTertiary }}>{s.label}</div>
+            <div key={s.label} style={{ background: theme.bgCard, borderRadius: radius.lg, padding: `${space.md}px ${space.sm}px`, border: `0.5px solid ${theme.border}`, textAlign: 'center' }}>
+              <div style={{
+                fontFamily: fontFamily.display, fontSize: 21, fontWeight: 600,
+                color: theme.text, letterSpacing: -0.3, marginBottom: 2,
+              }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: 10, color: theme.textTertiary, fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -342,7 +358,9 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
 
             <button onClick={() => setStep('flight')} style={{
               width: '100%', padding: 16, borderRadius: radius.lg, border: 'none',
-              background: theme.bgPrimary, color: '#fff', fontSize: font.md, fontWeight: 600, cursor: 'pointer',
+              background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+              color: '#fff', fontSize: font.md, fontWeight: 700, cursor: 'pointer',
+              boxShadow: `0 8px 20px -4px ${theme.gradientFrom}55`,
             }}>
               Find my flight →
             </button>
@@ -464,8 +482,10 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
             {selected && (
               <button onClick={handleBoard} style={{
                 width: '100%', padding: 18, borderRadius: radius.lg, border: 'none',
-                background: theme.bgPrimary, color: '#fff', fontSize: font.md,
+                background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+                color: '#fff', fontSize: font.md,
                 fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
+                boxShadow: `0 8px 20px -4px ${theme.gradientFrom}55`,
               }}>
                 {wantsChain ? 'View Boarding Pass · connecting ✈✈' : 'View Boarding Pass ✈'}
               </button>

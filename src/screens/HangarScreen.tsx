@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
-import { useThemeStore } from '../store/themeStore'
-import { space, radius, font } from '../styles/theme'
+import { space, radius, font, fontFamily, HANGAR } from '../styles/theme'
 import {
   fetchAircraftCatalog,
   fetchUserFleet,
@@ -38,7 +37,7 @@ const ERA_LABELS: Record<string, string> = {
 
 export default function HangarScreen({ onBack }: Props) {
   const { user, refreshProfile } = useAuthStore()
-  const { theme }                = useThemeStore()
+  const theme                    = HANGAR  // The Hangar always uses its own theme, independent of cabin lighting
   const { ownedThemes, activeThemeId, load: loadThemes, setActiveTheme } = useBoardingPassThemeStore()
   const { activeAircraftId, load: loadAircraft, setActiveAircraft } = useActiveAircraftStore()
 
@@ -134,16 +133,29 @@ export default function HangarScreen({ onBack }: Props) {
     })
 
   return (
-    <div style={{ minHeight: '100vh', background: theme.bg, transition: 'background 0.6s ease' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: `radial-gradient(ellipse 480px 380px at 50% -40px, rgba(255,201,92,0.10), transparent 70%), ${theme.bg}`,
+    }}>
       <div style={{ maxWidth: 480, margin: '0 auto', padding: `${space.xl}px ${space.lg}px 100px` }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: space.md, marginBottom: space.lg }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>Hangar</div>
-            <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2 }}>Your fleet, your collection</div>
+            <div style={{
+              fontFamily: fontFamily.display, fontSize: 26, fontWeight: 600,
+              color: theme.text, letterSpacing: -0.3,
+            }}>
+              The Hangar
+            </div>
+            <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2, letterSpacing: 0.3 }}>Your fleet, your collection</div>
           </div>
-          <div style={{ background: theme.bgSuccess, color: theme.textSuccess, padding: '6px 14px', borderRadius: radius.pill, fontSize: font.sm, fontWeight: 700 }}>
+          <div style={{
+            background: 'rgba(255,201,92,0.14)', color: theme.textWarning,
+            padding: '6px 14px', borderRadius: radius.sm,
+            fontSize: font.sm, fontWeight: 700,
+            border: '0.5px solid rgba(255,201,92,0.25)',
+          }}>
             ${(user?.cashBalance ?? 0).toFixed(2)}
           </div>
         </div>
@@ -151,7 +163,7 @@ export default function HangarScreen({ onBack }: Props) {
         {/* Tab switcher */}
         <div style={{
           display: 'flex', background: theme.bgCardAlt,
-          borderRadius: radius.lg, padding: 4, marginBottom: space.lg,
+          borderRadius: radius.md, padding: 4, marginBottom: space.lg,
           border: `0.5px solid ${theme.border}`,
         }}>
           {(['fleet', 'shop', 'themes'] as const).map(t => {
@@ -162,7 +174,7 @@ export default function HangarScreen({ onBack }: Props) {
             const label  = t === 'fleet' ? 'Fleet' : t === 'shop' ? 'Shop' : 'Themes'
             return (
               <button key={t} onClick={() => setTab(t)} style={{
-                flex: 1, padding: '10px', borderRadius: radius.md, border: 'none',
+                flex: 1, padding: '10px', borderRadius: radius.sm, border: 'none',
                 background: active ? theme.bgCard : 'transparent',
                 color: active ? theme.text : theme.textTertiary,
                 fontSize: font.sm, fontWeight: active ? 600 : 400,
