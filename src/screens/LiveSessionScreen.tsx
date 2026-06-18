@@ -56,6 +56,14 @@ export default function LiveSessionScreen({ onEnd }: Props) {
   const distanceRef  = useRef(0)
   const pomosRef     = useRef(0)
 
+  // Distance smoothing — see "Distance ticking" effect below for full explanation.
+  const blendTarget    = useRef<number | null>(null)
+  const blendStart     = useRef<number>(0)
+  const blendFrom      = useRef<number>(0)
+  const lastPolledPos  = useRef<{ lat: number; lng: number } | null>(
+    activeSession?.flight ? { lat: activeSession.flight.lat, lng: activeSession.flight.lng } : null
+  )
+
   // Go dark on mount, reset on unmount
   useEffect(() => {
     setFlying()
@@ -132,14 +140,80 @@ export default function LiveSessionScreen({ onEnd }: Props) {
     return () => clearInterval(sync)
   }, [])
 
-  // ── Flight position poll ───────────────────────────────────────────────────
+  // ── Distance ticking ────────────────────────────────────────────────────────
+  // There's no live "speed" or "distance traveled" field on Flight — what we
+  // do have is lat/lng, which moves for real every POLL_INTERVAL_MS (5 min)
+  // via simulateFlightUpdate. So real distance = haversine distance between
+  // the previous and new lat/lng on each poll, accumulated into a running
+  // total. Between polls, a per-second local timer estimates progress at a
+  // typical cruise speed (850 km/h) so the number visibly ticks up rather
+  // than sitting frozen for 5 minutes. When the real poll lands, instead of
+  // snapping to the corrected total (which could jump and look jarring), we
+  // smoothly blend the displayed number toward it over ~2.5s.
+  const ESTIMATED_KM_PER_SEC = 850 / 3600
+  const BLEND_DURATION_MS    = 2500
+
+  // Haversine distance in km between two lat/lng points
+  function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  }
+
+  // Per-second local estimate ticker
+  useEffect(() => {
+    if (!flight) return
+    const tick = setInterval(() => {
+      // If a correction is actively blending in, ease toward the target
+      // instead of just adding the per-second estimate on top of it.
+      if (blendTarget.current !== null) {
+        const t = Math.min(1, (Date.now() - blendStart.current) / BLEND_DURATION_MS)
+        const eased = 1 - Math.pow(1 - t, 3) // ease-out cubic, feels natural rather than linear
+        const value  = blendFrom.current + (blendTarget.current - blendFrom.current) * eased
+        distanceRef.current = value
+        setDistance(Math.round(value))
+        if (t >= 1) blendTarget.current = null
+        return
+      }
+
+      const newDist = distanceRef.current + ESTIMATED_KM_PER_SEC
+      distanceRef.current = newDist
+      setDistance(Math.round(newDist))
+    }, 1000)
+    return () => clearInterval(tick)
+  }, [!!flight])
+
+  // ── Flight position + real distance correction poll (every 5 min) ───────────
   useEffect(() => {
     if (!flight) return
     const p = setInterval(() => {
-      setFlight(prev => prev ? simulateFlightUpdate(prev) : prev)
-      const newDist = distanceRef.current + 70
-      distanceRef.current = newDist
-      setDistance(newDist)
+      setFlight(prev => {
+        if (!prev) return prev
+        const updated = simulateFlightUpdate(prev)
+
+        // Flight has no built-in distance field, so we derive the "real"
+        // distance for this poll interval from the actual lat/lng movement
+        // (haversine), and add it to a running total — that becomes our
+        // ground-truth correction target for the local estimate to blend to.
+        if (lastPolledPos.current) {
+          const segmentKm = haversineKm(
+            lastPolledPos.current.lat, lastPolledPos.current.lng,
+            updated.lat, updated.lng
+          )
+          const trueTotal = (blendTarget.current ?? distanceRef.current) + segmentKm
+
+          blendFrom.current   = distanceRef.current
+          blendTarget.current = trueTotal
+          blendStart.current  = Date.now()
+        }
+
+        lastPolledPos.current = { lat: updated.lat, lng: updated.lng }
+        return updated
+      })
     }, POLL_INTERVAL_MS)
     return () => clearInterval(p)
   }, [!!flight])
@@ -157,8 +231,23 @@ export default function LiveSessionScreen({ onEnd }: Props) {
         pomodorosCompleted: pomosRef.current,
       })
 
+      // Estimate study time left — same rough heuristic as before since the
+      // session's original target duration isn't directly available here.
+      const studyTimeLeft = elapsedRef.current > 0
+        ? Math.max(15, 60 - elapsedRef.current)
+        : 45
+
+      // Boarding buffer: if there's 10 minutes or less of study time left,
+      // it's not worth chaining a new flight — just end the session normally.
+      const BOARDING_BUFFER_MIN = 10
+      if (studyTimeLeft <= BOARDING_BUFFER_MIN) {
+        setTimeout(() => onEnd(null), 400)
+        return
+      }
+
       // Pull from Supabase cached pool — free tier gets pool, premium gets all
       const { supabase } = await import('../api/supabase')
+      const { findConnectingFlight } = await import('../api/opensky')
       const userTier = (activeSession as any)?.tier ?? 'free'
 
       let query = supabase
@@ -176,32 +265,32 @@ export default function LiveSessionScreen({ onEnd }: Props) {
       const { data: poolFlights } = await query
 
       if (poolFlights && poolFlights.length > 0) {
-        // Pick the flight with remaining time closest to the leftover study time
-        const studyTimeLeft = elapsedRef.current > 0
-          ? Math.max(15, 60 - elapsedRef.current) // rough estimate of what's left
-          : 45
-
-        const nextFlight = [...poolFlights].sort(
-          (a, b) => Math.abs(a.remaining_minutes - studyTimeLeft) - Math.abs(b.remaining_minutes - studyTimeLeft)
-        )[0]
-
-        // Map Supabase row to Flight type
-        const mappedFlight = {
-          id:               nextFlight.id,
-          icao24:           nextFlight.icao24,
-          airline:          nextFlight.airline ?? 'Unknown',
-          origin:           nextFlight.origin ?? '—',
-          originCity:       nextFlight.origin_city ?? 'En route',
-          destination:      nextFlight.destination ?? '—',
-          destinationCity:  nextFlight.destination_city ?? 'En route',
-          departureTime:    nextFlight.departure_time ?? new Date().toISOString(),
-          estimatedArrival: nextFlight.estimated_arrival ?? new Date().toISOString(),
-          remainingMinutes: nextFlight.remaining_minutes ?? 60,
-          lat:              nextFlight.lat,
-          lng:              nextFlight.lng,
-          altitude:         nextFlight.altitude ?? 35000,
+        // Map Supabase rows to Flight type first, then use the same
+        // closest-match + boarding-buffer logic as the free-tier pool itself
+        // so connecting flights behave consistently with initial boarding.
+        const mappedPool = poolFlights.map((row: any) => ({
+          id:               row.id,
+          icao24:           row.icao24,
+          airline:          row.airline ?? 'Unknown',
+          origin:           row.origin ?? '—',
+          originCity:       row.origin_city ?? 'En route',
+          destination:      row.destination ?? '—',
+          destinationCity:  row.destination_city ?? 'En route',
+          departureTime:    row.departure_time ?? new Date().toISOString(),
+          estimatedArrival: row.estimated_arrival ?? new Date().toISOString(),
+          remainingMinutes: row.remaining_minutes ?? 60,
+          lat:              row.lat,
+          lng:              row.lng,
+          altitude:         row.altitude ?? 35000,
           status:           'airborne' as const,
-          lastUpdated:      nextFlight.last_updated ?? new Date().toISOString(),
+          lastUpdated:      row.last_updated ?? new Date().toISOString(),
+        }))
+
+        const mappedFlight = findConnectingFlight(mappedPool, studyTimeLeft, flight?.id)
+
+        if (!mappedFlight) {
+          setTimeout(() => onEnd(null), 400)
+          return
         }
         // Brief pause then start the chain session
         setTimeout(async () => {

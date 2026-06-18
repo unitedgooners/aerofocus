@@ -162,12 +162,68 @@ export async function fetchFlightPosition(icao24: string): Promise<Partial<Fligh
 }
 
 /**
- * Filter flights for free tier (under 2 hours remaining, max 30)
+ * Free-tier duration slots (in minutes). Rather than one big pool, free users
+ * see exactly 7 flights — one per duration band, refreshed every 5 minutes
+ * (driven by useFlightPool's REFRESH_INTERVAL_MS) — so there's always a
+ * reasonable match no matter how long their planned study session is.
+ */
+export const FREE_TIER_DURATION_SLOTS = [15, 30, 45, 60, 75, 90, 120]
+
+/**
+ * Filter flights for free tier: exactly one flight per duration slot,
+ * picking whichever live flight's remainingMinutes is closest to each
+ * target. If a flight would be picked for more than one slot, the closer
+ * slot keeps it and the next-closest distinct flight fills the other slot,
+ * so free users always see up to 7 distinct options rather than duplicates.
  */
 export function filterFreeTierPool(flights: Flight[]): Flight[] {
-  return flights
-    .filter(f => f.remainingMinutes <= 120)
-    .slice(0, 30)
+  if (flights.length === 0) return []
+
+  const used = new Set<string>()
+  const pool: Flight[] = []
+
+  for (const target of FREE_TIER_DURATION_SLOTS) {
+    const candidates = [...flights]
+      .filter(f => !used.has(f.id))
+      .sort((a, b) => Math.abs(a.remainingMinutes - target) - Math.abs(b.remainingMinutes - target))
+
+    const best = candidates[0]
+    if (best) {
+      used.add(best.id)
+      pool.push(best)
+    }
+  }
+
+  return pool
+}
+
+/**
+ * Find the best replacement flight for a free-tier connecting flight, given
+ * the study time the user has left. Mirrors filterFreeTierPool's "closest
+ * match" logic but for a single target rather than all 7 slots, and adds a
+ * boarding/taxi buffer: if the user has 10 minutes or less of study time
+ * left, no connection is offered at all — not worth boarding a new flight
+ * for such a short remainder.
+ */
+export function findConnectingFlight(
+  flights: Flight[],
+  studyMinutesLeft: number,
+  excludeFlightId?: string
+): Flight | null {
+  const BOARDING_BUFFER_MIN = 10
+
+  if (studyMinutesLeft <= BOARDING_BUFFER_MIN) return null
+
+  // Target a flight slightly longer than the remaining study time to account
+  // for the taxi/boarding buffer, so the user doesn't land again right away.
+  const target = studyMinutesLeft + BOARDING_BUFFER_MIN
+
+  const candidates = flights.filter(f => f.id !== excludeFlightId)
+  if (candidates.length === 0) return null
+
+  return [...candidates].sort(
+    (a, b) => Math.abs(a.remainingMinutes - target) - Math.abs(b.remainingMinutes - target)
+  )[0]
 }
 
 /**

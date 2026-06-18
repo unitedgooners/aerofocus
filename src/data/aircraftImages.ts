@@ -29,4 +29,17 @@ export const AIRCRAFT_IMAGES: Record<string, string> = {
   mig29:          '/aircraft/mig29.png',
   f22:            '/aircraft/f22.png',
   b2:             '/aircraft/b2.png',
+
+  // Mixed-era additions (migration 010)
+  fokker_dr1:     '/aircraft/fokker_dr1.png',
+  dc10:           '/aircraft/dc10.png',
+  huey:           '/aircraft/huey.png',
+  gulfstream:     '/aircraft/gulfstream.png',
+  concorde2:      '/aircraft/concorde2.png',
+
+  // Wildland firefighting pack (migration 011)
+  s2t_tanker:     '/aircraft/s2t_tanker.png',
+  dc10_tanker:    '/aircraft/dc10_tanker.png',
+  ov10_attack:    '/aircraft/ov10_attack.png',
+  sky_crane:      '/aircraft/sky_crane.png',
 }
