@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useThemeStore } from '../store/themeStore'
 import { SERVER_URL } from '../utils/config'
 import { useAuthStore } from '../store/authStore'
-import { space, radius, font } from '../styles/theme'
+import { space, radius, font, fontFamily } from '../styles/theme'
 
 interface Props {
   onClose: () => void
@@ -50,7 +50,7 @@ export default function UpgradeScreen({ onClose }: Props) {
   return (
     <div style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(0,0,0,0.5)',
+      background: 'rgba(8,10,16,0.6)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       zIndex: 1000,
     }} onClick={onClose}>
@@ -58,53 +58,74 @@ export default function UpgradeScreen({ onClose }: Props) {
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 480,
-          background: theme.bgCard,
+          background: theme.bg,
           borderRadius: `${radius.xl}px ${radius.xl}px 0 0`,
           padding: `${space.xl}px ${space.lg}px`,
           maxHeight: '90vh',
           overflowY: 'auto',
         }}
       >
+        {/* Drag handle */}
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: theme.border, margin: '0 auto', marginBottom: space.lg }} />
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: space.xl }}>
-          <div style={{ fontSize: 40, marginBottom: space.sm }}>✈</div>
-          <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>
-            Upgrade to Premium
+          <div style={{
+            display: 'inline-block', background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+            color: '#fff', fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
+            padding: '5px 14px', borderRadius: radius.pill, marginBottom: space.md,
+          }}>
+            FIRST CLASS
           </div>
-          <div style={{ fontSize: font.sm, color: theme.textSecondary, marginTop: space.xs }}>
-            Unlock the full FlightFocus experience
+          <div style={{
+            fontFamily: fontFamily.display, fontSize: 28, fontWeight: 600,
+            color: theme.text, letterSpacing: -0.6, marginBottom: space.xs,
+          }}>
+            Fly without limits
+          </div>
+          <div style={{ fontSize: font.sm, color: theme.textSecondary, lineHeight: 1.5, maxWidth: 320, margin: '0 auto' }}>
+            Every live flight on Earth, unlimited connections, and a few comforts only first class gets.
           </div>
         </div>
 
         {/* Price */}
         <div style={{
-          background: '#07111F',
-          borderRadius: radius.lg,
+          background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+          borderRadius: radius.xl,
           padding: space.xl,
           textAlign: 'center',
           marginBottom: space.xl,
+          boxShadow: `0 16px 32px -8px ${theme.gradientFrom}55`,
         }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-            <span style={{ fontSize: 42, fontWeight: 700, color: '#fff', letterSpacing: -2 }}>$2.99</span>
-            <span style={{ fontSize: font.sm, color: 'rgba(255,255,255,0.4)' }}>/month</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 5 }}>
+            <span style={{ fontFamily: fontFamily.display, fontSize: 44, fontWeight: 600, color: '#fff', letterSpacing: -1.5 }}>$2.99</span>
+            <span style={{ fontSize: font.sm, color: 'rgba(255,255,255,0.7)' }}>/month</span>
           </div>
-          <div style={{ fontSize: font.xs, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>
+          <div style={{ fontSize: font.xs, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>
             Cancel anytime · Billed monthly
           </div>
         </div>
 
         {/* Features */}
-        <div style={{ marginBottom: space.xl }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: space.sm, marginBottom: space.xl }}>
           {PREMIUM_FEATURES.map(f => (
             <div key={f.title} style={{
               display: 'flex', gap: space.md, alignItems: 'flex-start',
-              padding: `${space.sm}px 0`,
-              borderBottom: `0.5px solid ${theme.border}`,
+              background: theme.bgCard, borderRadius: radius.lg,
+              border: `0.5px solid ${theme.border}`,
+              padding: `${space.md}px ${space.lg}px`,
             }}>
-              <div style={{ fontSize: 20, flexShrink: 0, width: 28, textAlign: 'center' }}>{f.icon}</div>
+              <div style={{
+                width: 40, height: 40, borderRadius: radius.md, flexShrink: 0,
+                background: theme.bgCardAlt,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 19,
+              }}>
+                {f.icon}
+              </div>
               <div>
-                <div style={{ fontSize: font.sm, fontWeight: 600, color: theme.text, marginBottom: 2 }}>{f.title}</div>
-                <div style={{ fontSize: font.xs, color: theme.textSecondary }}>{f.desc}</div>
+                <div style={{ fontSize: font.sm, fontWeight: 700, color: theme.text, letterSpacing: -0.2, marginBottom: 2 }}>{f.title}</div>
+                <div style={{ fontSize: font.xs, color: theme.textSecondary, lineHeight: 1.4 }}>{f.desc}</div>
               </div>
             </div>
           ))}
@@ -119,12 +140,14 @@ export default function UpgradeScreen({ onClose }: Props) {
         {/* CTA */}
         <button onClick={handleUpgrade} disabled={loading} style={{
           width: '100%', padding: 18, borderRadius: radius.lg, border: 'none',
-          background: '#185FA5', color: '#fff',
+          background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+          color: '#fff',
           fontSize: font.md, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
           opacity: loading ? 0.7 : 1,
           marginBottom: space.sm,
+          boxShadow: `0 8px 20px -4px ${theme.gradientFrom}55`,
         }}>
-          {loading ? 'Redirecting...' : 'Upgrade for $2.99/month ✈'}
+          {loading ? 'Redirecting...' : 'Upgrade to First Class ✈'}
         </button>
 
         <button onClick={onClose} style={{
