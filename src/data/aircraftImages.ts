@@ -37,9 +37,10 @@ export const AIRCRAFT_IMAGES: Record<string, string> = {
   gulfstream:     '/aircraft/gulfstream.png',
   concorde2:      '/aircraft/concorde2.png',
 
-  // Wildland firefighting pack (migration 011)
+  // Wildland firefighting pack (migrations 011, 013)
   s2t_tanker:     '/aircraft/s2t_tanker.png',
   dc10_tanker:    '/aircraft/dc10_tanker.png',
   ov10_attack:    '/aircraft/ov10_attack.png',
   sky_crane:      '/aircraft/sky_crane.png',
+  s70_firehawk:   '/aircraft/s70_firehawk.png',
 }

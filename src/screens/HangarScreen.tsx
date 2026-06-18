@@ -7,12 +7,14 @@ import {
   buyAircraft,
   fetchThemeCatalog,
   buyTheme,
+  FREE_TIER_AIRCRAFT_LIMIT,
   type AircraftModel,
   type OwnedAircraft,
   type BoardingPassTheme,
 } from '../api/fleetApi'
 import { useBoardingPassThemeStore } from '../store/boardingPassThemeStore'
 import { useActiveAircraftStore } from '../store/activeAircraftStore'
+import { useEffectivePremium } from '../hooks/useEffectivePremium'
 import FleetCarousel from '../components/FleetCarousel'
 import { AIRCRAFT_IMAGES } from '../data/aircraftImages'
 
@@ -41,6 +43,7 @@ export default function HangarScreen({ onBack }: Props) {
   const theme                    = HANGAR  // The Hangar always uses its own theme, independent of cabin lighting
   const { ownedThemes, activeThemeId, load: loadThemes, setActiveTheme } = useBoardingPassThemeStore()
   const { activeAircraftId, load: loadAircraft, setActiveAircraft } = useActiveAircraftStore()
+  const isPremium = useEffectivePremium()
 
   const [catalog, setCatalog]       = useState<AircraftModel[]>([])
   const [fleet, setFleet]           = useState<OwnedAircraft[]>([])
@@ -101,14 +104,18 @@ export default function HangarScreen({ onBack }: Props) {
     if (!user || aircraft.price === null) return
     setBuying(aircraft.id)
 
-    const result = await buyAircraft(user.id, aircraft.id, aircraft.price, user.cashBalance)
+    const result = await buyAircraft(user.id, aircraft.id, aircraft.price, user.cashBalance, isPremium)
 
     if (result.success) {
       setToast(`✓ ${aircraft.name} added to your fleet!`)
       await refreshProfile()
       await load()
+    } else if (result.error === 'Not enough cash') {
+      setToast("You don't have enough cash for this")
+    } else if (result.error?.includes('Free accounts can own')) {
+      setToast(result.error)
     } else {
-      setToast(result.error === 'Not enough cash' ? "You don't have enough cash for this" : 'Purchase failed')
+      setToast('Purchase failed')
     }
 
     setBuying(null)
@@ -150,7 +157,9 @@ export default function HangarScreen({ onBack }: Props) {
             }}>
               The Hangar
             </div>
-            <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2, letterSpacing: 0.3 }}>Your fleet, your collection</div>
+            <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2, letterSpacing: 0.3 }}>
+              {isPremium ? 'Your fleet, your collection' : `Your fleet, your collection · ${fleet.length}/${FREE_TIER_AIRCRAFT_LIMIT} owned`}
+            </div>
           </div>
           <div style={{
             background: 'rgba(255,201,92,0.14)', color: theme.textWarning,
@@ -223,6 +232,7 @@ export default function HangarScreen({ onBack }: Props) {
             buying={buying}
             onBuy={handleBuy}
             theme={theme}
+            fleetFull={!isPremium && fleet.length >= FREE_TIER_AIRCRAFT_LIMIT}
           />
         ) : (
           <ThemeGrid
@@ -244,7 +254,7 @@ export default function HangarScreen({ onBack }: Props) {
 
 // ── Shop grid — purchasable aircraft ─────────────────────────────────────────────
 function ShopGrid({
-  items, ownedIds, balance, buying, onBuy, theme,
+  items, ownedIds, balance, buying, onBuy, theme, fleetFull,
 }: {
   items: AircraftModel[]
   ownedIds: Set<string>
@@ -252,6 +262,7 @@ function ShopGrid({
   buying: string | null
   onBuy: (a: AircraftModel) => void
   theme: any
+  fleetFull: boolean
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -287,25 +298,25 @@ function ShopGrid({
               </div>
             </div>
 
-            {/* Expandable image reveal */}
+            {/* Expandable image reveal — shows the full illustration uncropped */}
             <div style={{
-              maxHeight: isExpanded ? 220 : 0,
+              maxHeight: isExpanded ? 420 : 0,
               overflow: 'hidden',
               borderRadius: radius.md,
               marginBottom: isExpanded ? space.md : 0,
               transition: 'max-height 0.3s ease, margin-bottom 0.3s ease',
+              background: theme.bgCardAlt,
             }}>
               {img ? (
                 <img
                   src={img}
                   alt={aircraft.name}
                   onClick={() => setExpandedId(null)}
-                  style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+                  style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain', display: 'block', cursor: 'pointer' }}
                 />
               ) : (
                 <div style={{
                   width: '100%', height: 220,
-                  background: theme.bgCardAlt,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 40, opacity: 0.4,
                 }}>
@@ -331,17 +342,17 @@ function ShopGrid({
               {!owned && !isFounder && (
                 <button
                   onClick={() => onBuy(aircraft)}
-                  disabled={!canAfford || buying === aircraft.id}
+                  disabled={!canAfford || fleetFull || buying === aircraft.id}
                   style={{
                     padding: '8px 20px', borderRadius: radius.md, border: 'none',
-                    background: canAfford ? theme.bgPrimary : theme.bgCardAlt,
-                    color: canAfford ? '#fff' : theme.textTertiary,
+                    background: canAfford && !fleetFull ? theme.bgPrimary : theme.bgCardAlt,
+                    color: canAfford && !fleetFull ? '#fff' : theme.textTertiary,
                     fontSize: font.xs, fontWeight: 700,
-                    cursor: canAfford && buying !== aircraft.id ? 'pointer' : 'not-allowed',
+                    cursor: canAfford && !fleetFull && buying !== aircraft.id ? 'pointer' : 'not-allowed',
                     opacity: buying === aircraft.id ? 0.6 : 1,
                   }}
                 >
-                  {buying === aircraft.id ? 'Buying...' : canAfford ? 'Buy' : 'Not enough cash'}
+                  {buying === aircraft.id ? 'Buying...' : fleetFull ? 'Fleet full' : canAfford ? 'Buy' : 'Not enough cash'}
                 </button>
               )}
             </div>

@@ -60,7 +60,13 @@ export async function fetchUserFleet(userId: string): Promise<OwnedAircraft[]> {
     .select('aircraft_id, acquired_at, flown_irl, source, aircraft_models(*)')
     .eq('user_id', userId)
 
-  if (error || !data) return []
+  if (error) {
+    console.error('fetchUserFleet error:', error)
+    return []
+  }
+  if (!data) return []
+
+  console.log('fetchUserFleet raw data:', data)
 
   return data
     .filter((row: any) => row.aircraft_models)
@@ -80,12 +86,17 @@ export async function fetchUserFleet(userId: string): Promise<OwnedAircraft[]> {
     }))
 }
 
+// Free users can own up to this many aircraft total (including starter/founder
+// grants). Premium users are unlimited — checked by the caller passing isPremium.
+export const FREE_TIER_AIRCRAFT_LIMIT = 7
+
 // ── Buy an aircraft (deducts cash, adds to fleet) ───────────────────────────────
 export async function buyAircraft(
   userId: string,
   aircraftId: string,
   price: number,
-  currentBalance: number
+  currentBalance: number,
+  isPremium: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
   if (currentBalance < price) {
     return { success: false, error: 'Not enough cash' }
@@ -101,6 +112,20 @@ export async function buyAircraft(
 
   if (existing) {
     return { success: false, error: 'Already owned' }
+  }
+
+  // Free-tier ownership cap — premium is unlimited
+  if (!isPremium) {
+    const { count, error: countError } = await supabase
+      .from('user_fleet')
+      .select('aircraft_id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+
+    if (countError) return { success: false, error: 'Failed to check fleet size' }
+
+    if ((count ?? 0) >= FREE_TIER_AIRCRAFT_LIMIT) {
+      return { success: false, error: `Free accounts can own up to ${FREE_TIER_AIRCRAFT_LIMIT} aircraft — upgrade to Premium for unlimited` }
+    }
   }
 
   // Deduct cash
@@ -121,6 +146,7 @@ export async function buyAircraft(
     await supabase.from('profiles').update({ cash_balance: currentBalance }).eq('id', userId)
     return { success: false, error: 'Failed to add to fleet' }
   }
+
 
   return { success: true }
 }
