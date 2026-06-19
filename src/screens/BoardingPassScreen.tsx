@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { useBoardingPassThemeStore } from '../store/boardingPassThemeStore'
 import { useActiveAircraftStore } from '../store/activeAircraftStore'
 import { useUpgradeStore } from '../store/upgradeStore'
-import { space, radius, font } from '../styles/theme'
+import { space, radius, font, fontFamily } from '../styles/theme'
 import { getPassColors } from '../styles/passThemes'
 import type { Flight, StudyMode } from '../types'
 import type { PomoCfg } from '../hooks/usePomodoro'
@@ -88,17 +88,21 @@ export default function BoardingPassScreen({
       <div style={{ textAlign: 'center', marginBottom: space.xl }}>
         {hasPendingUpgrade && (
           <div style={{
-            display: 'inline-block', background: '#9D4EDD', color: '#fff',
+            display: 'inline-block', background: 'linear-gradient(135deg, #9D4EDD, #6E2FB0)', color: '#fff',
             fontSize: 10, fontWeight: 700, letterSpacing: 1.5,
-            padding: '4px 12px', borderRadius: radius.pill, marginBottom: space.sm,
+            padding: '5px 14px', borderRadius: radius.pill, marginBottom: space.sm,
+            boxShadow: '0 6px 16px -4px rgba(157,78,221,0.5)',
           }}>
             ✨ UPGRADED TO FIRST CLASS
           </div>
         )}
-        <div style={{ fontSize: font.xs, color: pass.text, opacity: 0.4, letterSpacing: 1, marginBottom: space.xs }}>
+        <div style={{ fontSize: 10, color: pass.text, opacity: 0.4, letterSpacing: 2, marginBottom: space.xs, fontWeight: 600 }}>
           YOUR BOARDING PASS
         </div>
-        <div style={{ fontSize: font.lg, fontWeight: 600, color: pass.text }}>
+        <div style={{
+          fontFamily: fontFamily.display, fontSize: 24, fontWeight: 600,
+          color: pass.text, letterSpacing: -0.4,
+        }}>
           Ready for takeoff
         </div>
       </div>
@@ -111,6 +115,8 @@ export default function BoardingPassScreen({
         filter: torn ? 'blur(2px)' : 'none',
         transition: 'filter 0.4s, opacity 0.4s',
         opacity: torn ? 0 : 1,
+        boxShadow: '0 24px 48px -16px rgba(0,0,0,0.25)',
+        borderRadius: radius.xl,
       }}>
 
         {/* Top half */}
@@ -123,10 +129,10 @@ export default function BoardingPassScreen({
         }}>
           {/* Airline row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.xl }}>
-            <div style={{ fontSize: font.xs, fontWeight: 700, color: pass.accent, letterSpacing: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: pass.accent, letterSpacing: 1.5 }}>
               ✈ FLIGHTFOCUS
             </div>
-            <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.5, fontWeight: 500 }}>
+            <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.45, fontWeight: 600, letterSpacing: 0.5 }}>
               {flight.id}
             </div>
           </div>
@@ -134,19 +140,25 @@ export default function BoardingPassScreen({
           {/* Route */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: space.xl }}>
             <div>
-              <div style={{ fontSize: 48, fontWeight: 800, color: pass.paperText, letterSpacing: -3, lineHeight: 1 }}>
+              <div style={{
+                fontFamily: fontFamily.display, fontSize: 50, fontWeight: 600,
+                color: pass.paperText, letterSpacing: -2, lineHeight: 1,
+              }}>
                 {flight.origin === '—' ? '???' : flight.origin}
               </div>
-              <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.5, marginTop: 4 }}>
+              <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.5, marginTop: 5, fontWeight: 500 }}>
                 {flight.originCity === 'En route' ? 'Departing' : flight.originCity}
               </div>
             </div>
-            <div style={{ fontSize: 28, color: pass.paperText, opacity: 0.25, marginBottom: 8 }}>✈</div>
+            <div style={{ fontSize: 26, color: pass.paperText, opacity: 0.25, marginBottom: 10 }}>✈</div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 48, fontWeight: 800, color: pass.paperText, letterSpacing: -3, lineHeight: 1 }}>
+              <div style={{
+                fontFamily: fontFamily.display, fontSize: 50, fontWeight: 600,
+                color: pass.paperText, letterSpacing: -2, lineHeight: 1,
+              }}>
                 {flight.destination === '—' ? '???' : flight.destination}
               </div>
-              <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.5, marginTop: 4 }}>
+              <div style={{ fontSize: font.xs, color: pass.paperText, opacity: 0.5, marginTop: 5, fontWeight: 500 }}>
                 {flight.destinationCity === 'En route' ? 'Arriving' : flight.destinationCity}
               </div>
             </div>
@@ -160,8 +172,8 @@ export default function BoardingPassScreen({
               { label: 'DURATION', value: fmtHrs(flight.remainingMinutes) },
             ].map(d => (
               <div key={d.label}>
-                <div style={{ fontSize: 9, color: pass.paperText, opacity: 0.4, letterSpacing: 1, marginBottom: 3 }}>{d.label}</div>
-                <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.paperText }}>{d.value}</div>
+                <div style={{ fontSize: 9, color: pass.paperText, opacity: 0.4, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>{d.label}</div>
+                <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.paperText, letterSpacing: -0.2 }}>{d.value}</div>
               </div>
             ))}
           </div>
@@ -199,7 +211,7 @@ export default function BoardingPassScreen({
 
         {/* Bottom stub */}
         <div style={{
-          background: pass.accent,
+          background: `linear-gradient(135deg, ${pass.accent}, ${pass.accent})`,
           borderRadius: `0 0 ${radius.xl}px ${radius.xl}px`,
           padding: `${space.lg}px ${space.xl}px`,
           transform: tearing ? 'translateY(8px) rotate(1deg)' : 'none',
@@ -211,8 +223,8 @@ export default function BoardingPassScreen({
             borderBottom: `0.5px solid ${pass.text}33`, paddingBottom: space.sm, marginBottom: space.md,
           }}>
             <div>
-              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>AIRCRAFT</div>
-              <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.text }}>
+              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>AIRCRAFT</div>
+              <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.text, letterSpacing: -0.2 }}>
                 {activeAircraft?.name ?? 'Cessna 172 Skyhawk'}
               </div>
             </div>
@@ -224,30 +236,30 @@ export default function BoardingPassScreen({
               { label: 'ALT',     value: `${flight.altitude.toLocaleString()} ft` },
             ].map(d => (
               <div key={d.label}>
-                <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>{d.label}</div>
-                <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.text }}>{d.value}</div>
+                <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>{d.label}</div>
+                <div style={{ fontSize: font.sm, fontWeight: 700, color: pass.text, letterSpacing: -0.2 }}>{d.value}</div>
               </div>
             ))}
           </div>
           {subject && (
             <div style={{ borderTop: `0.5px solid ${pass.text}33`, paddingTop: space.sm }}>
-              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>STUDYING</div>
+              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>STUDYING</div>
               <div style={{ fontSize: font.sm, fontWeight: 600, color: pass.text }}>{subject}</div>
             </div>
           )}
           {mode === 'pomodoro' && pomoCfg && (
             <div style={{ borderTop: `0.5px solid ${pass.text}33`, paddingTop: space.sm, marginTop: space.sm }}>
-              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>INTERVALS</div>
+              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>INTERVALS</div>
               <div style={{ fontSize: font.sm, fontWeight: 600, color: pass.text }}>{modeDetail}</div>
             </div>
           )}
           {wantsChain && (
             <div style={{ borderTop: `0.5px solid ${pass.text}33`, paddingTop: space.sm, marginTop: space.sm }}>
-              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1, marginBottom: 3 }}>CONNECTING FLIGHT</div>
+              <div style={{ fontSize: 9, color: pass.text, opacity: 0.5, letterSpacing: 1.2, marginBottom: 4, fontWeight: 600 }}>CONNECTING FLIGHT</div>
               <div style={{ fontSize: font.sm, fontWeight: 600, color: pass.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>✈ Assigned at landing</span>
               </div>
-              <div style={{ fontSize: 10, color: pass.text, opacity: 0.4, marginTop: 2 }}>
+              <div style={{ fontSize: 10, color: pass.text, opacity: 0.4, marginTop: 3 }}>
                 Best live flight selected when this one lands
               </div>
             </div>
@@ -262,15 +274,16 @@ export default function BoardingPassScreen({
           padding: 18, borderRadius: radius.lg, border: 'none',
           background: pass.paper, color: pass.accent,
           fontSize: font.md, fontWeight: 700,
-          cursor: 'pointer', letterSpacing: 0.5,
+          cursor: 'pointer', letterSpacing: 0.3,
           marginBottom: space.md,
+          boxShadow: '0 8px 20px -6px rgba(0,0,0,0.3)',
         }}>
           ✂ Tear &amp; Board
         </button>
       )}
 
       {tearing && (
-        <div style={{ fontSize: font.md, color: pass.text, opacity: 0.6, marginBottom: space.md }}>
+        <div style={{ fontFamily: fontFamily.display, fontSize: font.md, color: pass.text, opacity: 0.6, marginBottom: space.md }}>
           Boarding...
         </div>
       )}
@@ -278,8 +291,8 @@ export default function BoardingPassScreen({
       {!tearing && (
         <button onClick={onBack} style={{
           background: 'none', border: 'none',
-          color: pass.text, opacity: 0.3, fontSize: font.sm,
-          cursor: 'pointer',
+          color: pass.text, opacity: 0.35, fontSize: font.sm,
+          cursor: 'pointer', fontWeight: 500,
         }}>
           ← Choose a different flight
         </button>

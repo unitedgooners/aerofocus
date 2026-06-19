@@ -233,3 +233,30 @@ export function pickRandomFlight(flights: Flight[]): Flight | null {
   if (flights.length === 0) return null
   return flights[Math.floor(Math.random() * flights.length)]
 }
+
+/**
+ * Pick a random flight whose remaining time is reasonably close to a target
+ * study duration — used by the "Random flight" button's fixed-duration mode
+ * (premium). Unlike pickRandomFlight, this isn't uniformly random across the
+ * whole pool; it first narrows to flights within a tolerance window around
+ * the target, then picks randomly among those, so the result still feels
+ * "random" while actually fitting the study session length the user asked for.
+ */
+export function pickRandomFlightForDuration(flights: Flight[], targetMinutes: number): Flight | null {
+  if (flights.length === 0) return null
+
+  const TOLERANCE_MIN = 15
+  let candidates = flights.filter(f => Math.abs(f.remainingMinutes - targetMinutes) <= TOLERANCE_MIN)
+
+  // Widen the tolerance once if nothing matched closely, rather than failing outright
+  if (candidates.length === 0) {
+    candidates = flights.filter(f => Math.abs(f.remainingMinutes - targetMinutes) <= TOLERANCE_MIN * 3)
+  }
+
+  // Still nothing close enough — fall back to closest single match rather than no result
+  if (candidates.length === 0) {
+    return findConnectingFlight(flights, targetMinutes)
+  }
+
+  return candidates[Math.floor(Math.random() * candidates.length)]
+}

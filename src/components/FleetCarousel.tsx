@@ -69,6 +69,27 @@ const AIRCRAFT_FACTS: Record<string, { firstFlight: string; topSpeed: string; fa
   mig29:        { firstFlight: '1977', topSpeed: '1,520 mph',  fact: 'Built for tight, high-G dogfighting maneuvers.' },
   f22:          { firstFlight: '1997', topSpeed: '1,500 mph',  fact: 'Combines stealth, speed, and agility unmatched by any rival.' },
   b2:           { firstFlight: '1989', topSpeed: '630 mph',    fact: 'Its flying-wing shape makes it nearly invisible to radar.' },
+
+  // Mixed-era additions
+  fokker_dr1:   { firstFlight: '1917', topSpeed: '103 mph',    fact: 'Made famous as the Red Baron\'s aircraft of choice in WWI.' },
+  dc10:         { firstFlight: '1970', topSpeed: '600 mph',    fact: 'One of the first widebody trijets to cross the Atlantic regularly.' },
+  huey:         { firstFlight: '1956', topSpeed: '127 mph',    fact: 'Its rotor sound became one of the defining images of the Vietnam War.' },
+  gulfstream:   { firstFlight: '2009', topSpeed: '710 mph',    fact: 'One of the fastest civilian aircraft, just shy of the speed of sound.' },
+  concorde2:    { firstFlight: '1968', topSpeed: '1,510 mph',  fact: 'Beat the Concorde into the air by two months, but never matched its longevity.' },
+
+  // Wildland firefighting pack
+  s2t_tanker:   { firstFlight: '1952', topSpeed: '270 mph',    fact: 'Originally built to hunt submarines, now hunts wildfires instead.' },
+  dc10_tanker:  { firstFlight: '1970', topSpeed: '600 mph',    fact: 'Can drop nearly 9,400 gallons of retardant in a single pass.' },
+  ov10_attack:  { firstFlight: '1965', topSpeed: '281 mph',    fact: 'Its twin-boom design gives the crew a clear view straight down at the fire.' },
+  sky_crane:    { firstFlight: '1962', topSpeed: '127 mph',    fact: 'Can scoop and drop 2,650 gallons of water in under a minute.' },
+  s70_firehawk: { firstFlight: '1974', topSpeed: '184 mph',    fact: 'Built on the Black Hawk airframe, adapted for aerial firefighting.' },
+
+  // Rotary pack — military, civilian, first-responder mix
+  blackhawk:        { firstFlight: '1974', topSpeed: '183 mph', fact: 'Can carry a full squad of soldiers into terrain no plane can reach.' },
+  h125_news:        { firstFlight: '1986', topSpeed: '178 mph', fact: 'Favored by news crews for its smooth ride and tight turning radius.' },
+  ec135_ambulance:  { firstFlight: '1994', topSpeed: '178 mph', fact: 'Its low-noise tail rotor makes it ideal for hospital helipads.' },
+  chinook:          { firstFlight: '1961', topSpeed: '196 mph', fact: 'Its tandem rotors let it carry loads few other helicopters can lift.' },
+  jetranger_police: { firstFlight: '1966', topSpeed: '150 mph', fact: 'One of the most widely flown helicopters in police aviation history.' },
 }
 
 export default function FleetCarousel({ fleet, activeAircraftId, onSelect, theme }: Props) {

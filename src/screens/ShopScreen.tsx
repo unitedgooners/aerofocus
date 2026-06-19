@@ -32,10 +32,15 @@ const RARITY_COLORS: Record<string, { bg: string; text: string }> = {
 }
 
 const ERA_LABELS: Record<string, string> = {
-  vintage:   'Vintage',
-  classic:   'Classic',
-  modern:    'Modern',
+  vintage:     'Vintage',
+  classic:     'Classic',
+  modern:      'Modern',
   'wide-body': 'Wide-body',
+  wwi:         'WWI',
+  wwii:        'WWII',
+  korea:       'Korean War',
+  vietnam:     'Vietnam War',
+  coldwar:     'Cold War',
 }
 
 export default function ShopScreen({ onBack, onUpgrade }: Props) {

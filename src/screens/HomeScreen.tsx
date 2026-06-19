@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import { useSessionStore } from '../store/sessionStore'
 import { useThemeStore } from '../store/themeStore'
 import { useFlightPool } from '../hooks/useFlightPool'
+import RandomFlightButton from '../components/RandomFlightButton'
 import { MOCK_SESSIONS } from '../mock/data'
 import { space, radius, font, fontFamily } from '../styles/theme'
 import type { Flight, StudyMode } from '../types'
@@ -379,6 +380,14 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
               </span>
               <span style={{ color: theme.textAccent, fontWeight: 600 }}>~{fmtHrs(target)}</span>
             </div>
+
+            <RandomFlightButton
+              theme={theme}
+              onUpgrade={onUpgrade}
+              onPicked={(f) => handleSelectFlight(f)}
+            />
+
+            <div style={{ height: space.md }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.sm }}>
               <span style={{ fontSize: font.xs, fontWeight: 600, color: theme.textTertiary, letterSpacing: 1 }}>BEST MATCHES</span>

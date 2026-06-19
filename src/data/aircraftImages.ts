@@ -43,4 +43,11 @@ export const AIRCRAFT_IMAGES: Record<string, string> = {
   ov10_attack:    '/aircraft/ov10_attack.png',
   sky_crane:      '/aircraft/sky_crane.png',
   s70_firehawk:   '/aircraft/s70_firehawk.png',
+
+  // Rotary pack (migration 014) — military, civilian, first-responder mix
+  blackhawk:        '/aircraft/blackhawk.png',
+  h125_news:        '/aircraft/h125_news.png',
+  ec135_ambulance:  '/aircraft/ec135_ambulance.png',
+  chinook:          '/aircraft/chinook.png',
+  jetranger_police: '/aircraft/jetranger_police.png',
 }
