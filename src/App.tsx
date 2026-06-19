@@ -12,6 +12,7 @@ import LogbookScreen from './screens/LogbookScreen'
 import ResetPasswordScreen from './screens/ResetPasswordScreen'
 import UpgradeScreen from './screens/UpgradeScreen'
 import HangarScreen from './screens/HangarScreen'
+import ShopScreen from './screens/ShopScreen'
 import { useUpgradeStore } from './store/upgradeStore'
 import BottomNav from './components/BottomNav'
 import type { Flight, Session, StudyMode } from './types'
@@ -147,8 +148,8 @@ export default function App() {
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
       {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
-      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} initialTab="fleet" />}
-      {tab === 'shop'    && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} initialTab="shop" />}
+      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
+      {tab === 'shop'    && <ShopScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
       {tab === 'crew'    && <CrewScreen />}
       {tab === 'logbook' && <LogbookScreen />}
 

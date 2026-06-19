@@ -158,7 +158,7 @@ export default function LoginScreen({ onSuccess }: Props) {
 
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 44, marginBottom: space.sm }}>✈</div>
-          <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>FlightFocus</div>
+          <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>AeroFocus</div>
           <div style={{ fontSize: font.sm, color: theme.textSecondary, marginTop: space.xs }}>Study at 38,000 feet</div>
         </div>
 
