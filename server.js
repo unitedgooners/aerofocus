@@ -219,6 +219,13 @@ async function handleCreateCheckout(req, res, body) {
       email,
       metadata: { supabase_user_id: userId },
     })
+
+    if (!customerRes.data.id) {
+      console.error('Stripe customer creation failed:', JSON.stringify(customerRes.data))
+      jsonResponse(res, 500, { error: 'Failed to create customer', detail: customerRes.data })
+      return
+    }
+
     const customerId  = customerRes.data.id
     const sessionRes  = await stripeRequest('POST', 'checkout/sessions', {
       'customer':                               customerId,
@@ -231,10 +238,17 @@ async function handleCreateCheckout(req, res, body) {
       'metadata[supabase_user_id]':             userId,
       'subscription_data[metadata][supabase_user_id]': userId,
     })
+
+    if (!sessionRes.data.url) {
+      console.error('Stripe checkout session creation failed:', JSON.stringify(sessionRes.data))
+      jsonResponse(res, 500, { error: 'Failed to create checkout session', detail: sessionRes.data })
+      return
+    }
+
     jsonResponse(res, 200, { url: sessionRes.data.url })
   } catch (err) {
     console.error('Checkout error:', err)
-    jsonResponse(res, 500, { error: 'Failed to create checkout session' })
+    jsonResponse(res, 500, { error: 'Failed to create checkout session', detail: err.message })
   }
 }
 
