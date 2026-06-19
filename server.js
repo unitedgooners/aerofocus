@@ -6,8 +6,13 @@
  *   - Stripe checkout + webhook → /stripe/*
  *   - Background flight poller  → runs every 5 minutes internally
  *
+ * NOTE: OpenSky retired basic-auth (username/password) on March 18, 2026.
+ * Authentication is now OAuth2 client-credentials: we exchange
+ * OPENSKY_CLIENT_ID / OPENSKY_CLIENT_SECRET for a bearer token, cache it,
+ * and refresh automatically before its ~30 minute expiry.
+ *
  * Local dev:   node server.js
- * Production:  deploy to Render, set env vars
+ * Production:  deploy to Railway, set env vars
  */
 
 const http   = require('http')
@@ -16,8 +21,8 @@ const crypto = require('crypto')
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const PORT                  = process.env.PORT || 3001
-const OPENSKY_USERNAME      = process.env.OPENSKY_USERNAME || ''
-const OPENSKY_PASSWORD      = process.env.OPENSKY_PASSWORD || ''
+const OPENSKY_CLIENT_ID     = process.env.OPENSKY_CLIENT_ID || ''
+const OPENSKY_CLIENT_SECRET = process.env.OPENSKY_CLIENT_SECRET || ''
 const SUPABASE_URL          = process.env.SUPABASE_URL || ''
 const SUPABASE_ANON_KEY     = process.env.SUPABASE_ANON_KEY || ''
 const STRIPE_SECRET_KEY     = process.env.STRIPE_SECRET_KEY || ''
@@ -26,6 +31,74 @@ const STRIPE_PRICE_ID       = process.env.STRIPE_PRICE_ID || ''
 const CLIENT_URL            = process.env.CLIENT_URL || 'http://localhost:3000'
 const POLL_INTERVAL_MS      = 5 * 60 * 1000
 const POOL_SIZE             = 30
+
+const OPENSKY_TOKEN_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token'
+
+// ── OpenSky OAuth2 token manager ────────────────────────────────────────────────
+// Tokens expire after ~30 min. We cache the token and its expiry, and only
+// fetch a new one when the cached one is missing or about to expire.
+let cachedToken     = null
+let tokenExpiresAt  = 0
+const TOKEN_REFRESH_BUFFER_MS = 60 * 1000 // refresh 60s before actual expiry
+
+function fetchOpenSkyToken() {
+  return new Promise((resolve, reject) => {
+    const body = new URLSearchParams({
+      grant_type:    'client_credentials',
+      client_id:     OPENSKY_CLIENT_ID,
+      client_secret: OPENSKY_CLIENT_SECRET,
+    }).toString()
+
+    const url = new URL(OPENSKY_TOKEN_URL)
+    const options = {
+      hostname: url.hostname,
+      path:     url.pathname,
+      method:   'POST',
+      headers: {
+        'Content-Type':   'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }
+
+    const req = https.request(options, res => {
+      let data = ''
+      res.on('data', chunk => data += chunk)
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data)
+          if (!json.access_token) {
+            reject(new Error(`OpenSky token error: ${data}`))
+            return
+          }
+          resolve(json)
+        } catch (e) {
+          reject(e)
+        }
+      })
+    })
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
+}
+
+async function getOpenSkyToken() {
+  const now = Date.now()
+  if (cachedToken && now < tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
+    return cachedToken
+  }
+
+  if (!OPENSKY_CLIENT_ID || !OPENSKY_CLIENT_SECRET) {
+    throw new Error('OpenSky client_id/client_secret not configured')
+  }
+
+  const json = await fetchOpenSkyToken()
+  cachedToken    = json.access_token
+  // expires_in is in seconds; OpenSky tokens are typically ~1800s (30 min)
+  tokenExpiresAt = now + (json.expires_in ? json.expires_in * 1000 : 30 * 60 * 1000)
+  console.log(`  OpenSky token refreshed, expires in ${Math.round((tokenExpiresAt - now) / 1000)}s`)
+  return cachedToken
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function parseBody(req) {
@@ -48,30 +121,37 @@ function jsonResponse(res, status, data) {
 }
 
 // ── OpenSky proxy ─────────────────────────────────────────────────────────────
-function proxyOpenSky(req, res) {
-  const auth    = Buffer.from(`${OPENSKY_USERNAME}:${OPENSKY_PASSWORD}`).toString('base64')
-  const options = {
-    hostname: 'opensky-network.org',
-    path:     req.url.replace('/api', '/api'),
-    method:   req.method,
-    headers:  { Authorization: `Basic ${auth}`, Accept: 'application/json' },
-  }
+async function proxyOpenSky(req, res) {
+  try {
+    const token = await getOpenSkyToken()
 
-  const proxy = https.request(options, proxyRes => {
-    const headers = { ...proxyRes.headers }
-    delete headers['access-control-allow-origin']
-    headers['Access-Control-Allow-Origin'] = '*'
-    res.writeHead(proxyRes.statusCode, headers)
-    proxyRes.pipe(res)
-  })
+    const options = {
+      hostname: 'opensky-network.org',
+      path:     req.url, // already starts with /api/...
+      method:   req.method,
+      headers:  { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+    }
 
-  proxy.on('error', err => {
-    console.error('Proxy error:', err.message)
+    const proxy = https.request(options, proxyRes => {
+      const headers = { ...proxyRes.headers }
+      delete headers['access-control-allow-origin']
+      headers['Access-Control-Allow-Origin'] = '*'
+      res.writeHead(proxyRes.statusCode, headers)
+      proxyRes.pipe(res)
+    })
+
+    proxy.on('error', err => {
+      console.error('Proxy error:', err.message)
+      res.writeHead(502)
+      res.end('Proxy error')
+    })
+
+    req.pipe(proxy)
+  } catch (err) {
+    console.error('Proxy auth error:', err.message)
     res.writeHead(502)
-    res.end('Proxy error')
-  })
-
-  req.pipe(proxy)
+    res.end('Proxy auth error')
+  }
 }
 
 // ── Supabase helper ───────────────────────────────────────────────────────────
@@ -226,22 +306,26 @@ function estimateRemaining(altM, vel) {
 }
 
 function fetchOpenSkyRaw() {
-  return new Promise((resolve, reject) => {
-    const auth = Buffer.from(`${OPENSKY_USERNAME}:${OPENSKY_PASSWORD}`).toString('base64')
-    https.get({
-      hostname: 'opensky-network.org',
-      path:     '/api/states/all?lamin=24&lamax=50&lomin=-125&lomax=-66',
-      headers:  { Authorization: `Basic ${auth}` },
-    }, res => {
-      let data = ''
-      res.on('data', c => data += c)
-      res.on('end', () => { try { resolve(JSON.parse(data)) } catch(e) { reject(e) } })
-    }).on('error', reject)
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = await getOpenSkyToken()
+      https.get({
+        hostname: 'opensky-network.org',
+        path:     '/api/states/all?lamin=24&lamax=50&lomin=-125&lomax=-66',
+        headers:  { Authorization: `Bearer ${token}` },
+      }, res => {
+        let data = ''
+        res.on('data', c => data += c)
+        res.on('end', () => { try { resolve(JSON.parse(data)) } catch(e) { reject(e) } })
+      }).on('error', reject)
+    } catch (err) {
+      reject(err)
+    }
   })
 }
 
 async function poll() {
-  if (!SUPABASE_URL || !OPENSKY_USERNAME) return
+  if (!SUPABASE_URL || !OPENSKY_CLIENT_ID) return
   console.log(`[${new Date().toLocaleTimeString()}] Polling OpenSky...`)
   try {
     const json    = await fetchOpenSkyRaw()
@@ -286,7 +370,7 @@ const server = http.createServer(async (req, res) => {
 
   // OpenSky proxy
   if (req.url.startsWith('/api/')) {
-    proxyOpenSky(req, res)
+    await proxyOpenSky(req, res)
     return
   }
 
