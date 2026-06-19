@@ -51,15 +51,16 @@ export interface PomodoroState {
 export interface UserProfile {
   id: string
   username: string
+  email: string
   tier: SubscriptionTier
   homeAirport?: string
   streakDays: number
   totalFocusMinutes: number
   totalFlights: number
   totalDistanceKm: number
-  cashBalance: number        // ← add this
-  referralCode: string       // ← add this
-  signupNumber: number | null // ← add this
+  cashBalance: number
+  referralCode: string
+  signupNumber: number | null
   createdAt: string
 }
 

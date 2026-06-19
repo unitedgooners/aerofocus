@@ -27,6 +27,7 @@ async function fetchOrCreateProfile(userId: string, email: string, username?: st
     return {
       id:                data.id,
       username:          data.username,
+      email,
       tier:              data.tier ?? 'free',
       homeAirport:       data.home_airport,
       streakDays:        data.streak_days ?? 0,
@@ -53,6 +54,7 @@ async function fetchOrCreateProfile(userId: string, email: string, username?: st
   return {
     id:                created.id,
     username:          created.username,
+    email,
     tier:              created.tier ?? 'free',
     homeAirport:       created.home_airport,
     streakDays:        created.streak_days ?? 0,
