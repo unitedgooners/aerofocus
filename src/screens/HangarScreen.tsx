@@ -21,6 +21,7 @@ import { AIRCRAFT_IMAGES } from '../data/aircraftImages'
 interface Props {
   onBack: () => void
   onUpgrade: () => void
+  initialTab?: 'fleet' | 'shop' | 'themes'
 }
 
 const RARITY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -39,7 +40,7 @@ const ERA_LABELS: Record<string, string> = {
   'wide-body': 'Wide-body',
 }
 
-export default function HangarScreen({ onBack, onUpgrade }: Props) {
+export default function HangarScreen({ onBack, onUpgrade, initialTab = 'fleet' }: Props) {
   const { user, refreshProfile } = useAuthStore()
   const theme                    = HANGAR  // The Hangar always uses its own theme, independent of cabin lighting
   const { ownedThemes, activeThemeId, load: loadThemes, setActiveTheme } = useBoardingPassThemeStore()
@@ -50,7 +51,7 @@ export default function HangarScreen({ onBack, onUpgrade }: Props) {
   const [fleet, setFleet]           = useState<OwnedAircraft[]>([])
   const [themeCatalog, setThemeCatalog] = useState<BoardingPassTheme[]>([])
   const [isLoading, setLoading]     = useState(true)
-  const [tab, setTab]               = useState<'fleet' | 'shop' | 'themes'>('fleet')
+  const [tab, setTab]               = useState<'fleet' | 'shop' | 'themes'>(initialTab)
   const [buying, setBuying]         = useState<string | null>(null)
   const [toast, setToast]           = useState('')
 
@@ -156,10 +157,12 @@ export default function HangarScreen({ onBack, onUpgrade }: Props) {
               fontFamily: fontFamily.display, fontSize: 26, fontWeight: 600,
               color: theme.text, letterSpacing: -0.3,
             }}>
-              The Hangar
+              {initialTab === 'shop' ? 'Shop' : 'The Hangar'}
             </div>
             <div style={{ fontSize: font.xs, color: theme.textSecondary, marginTop: 2, letterSpacing: 0.3 }}>
-              {isPremium ? 'Your fleet, your collection' : `Your fleet, your collection · ${fleet.length}/${FREE_TIER_AIRCRAFT_LIMIT} owned`}
+              {initialTab === 'shop'
+                ? 'Buy aircraft and boarding pass themes'
+                : isPremium ? 'Your fleet, your collection' : `Your fleet, your collection · ${fleet.length}/${FREE_TIER_AIRCRAFT_LIMIT} owned`}
             </div>
           </div>
           <div style={{

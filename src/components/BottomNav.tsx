@@ -1,7 +1,7 @@
 import React from 'react'
 import { useThemeStore } from '../store/themeStore'
 
-type Tab = 'home' | 'live' | 'crew' | 'logbook' | 'hangar'
+type Tab = 'home' | 'shop' | 'crew' | 'logbook' | 'hangar'
 
 interface Props {
   active: Tab
@@ -25,9 +25,13 @@ function PropellerIcon({ color }: { color: string }) {
 export default function BottomNav({ active, onNavigate, hasActiveSession }: Props) {
   const { theme } = useThemeStore()
 
+  // "Fly" was removed — an active session is now a true full-screen takeover
+  // (App.tsx hides BottomNav entirely while tab === 'live'), so it never needs
+  // its own nav slot. That slot now goes to Shop, since the Shop moved out of
+  // the Hangar's internal tabs to be its own first-class destination.
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'home',    label: 'Home',    icon: '⌂' },
-    { id: 'live',    label: 'Fly',     icon: '✈' },
+    { id: 'shop',    label: 'Shop',    icon: '🛒' },
     { id: 'hangar',  label: 'Hangar',  icon: '🛩' },
     { id: 'crew',    label: 'Crew',    icon: '◎' },
     { id: 'logbook', label: 'Logbook', icon: '▦' },
@@ -47,7 +51,6 @@ export default function BottomNav({ active, onNavigate, hasActiveSession }: Prop
     }}>
       {tabs.map(tab => {
         const isActive = active === tab.id
-        const isLive = tab.id === 'live'
         return (
           <button
             key={tab.id}
@@ -65,8 +68,9 @@ export default function BottomNav({ active, onNavigate, hasActiveSession }: Prop
               position: 'relative',
             }}
           >
-            {/* Live session dot */}
-            {isLive && hasActiveSession && (
+            {/* Active session indicator dot — now shown on Home, since that's
+                where a user returns to find/resume their flight */}
+            {tab.id === 'home' && hasActiveSession && (
               <div style={{
                 position: 'absolute',
                 top: 8, right: '50%',

@@ -17,7 +17,7 @@ import BottomNav from './components/BottomNav'
 import type { Flight, Session, StudyMode } from './types'
 import type { PomoCfg } from './hooks/usePomodoro'
 
-type Tab = 'home' | 'boarding' | 'live' | 'crew' | 'logbook' | 'hangar'
+type Tab = 'home' | 'boarding' | 'live' | 'shop' | 'crew' | 'logbook' | 'hangar'
 
 interface BoardingInfo {
   flight: Flight
@@ -147,13 +147,14 @@ export default function App() {
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
       {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
-      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
+      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} initialTab="fleet" />}
+      {tab === 'shop'    && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} initialTab="shop" />}
       {tab === 'crew'    && <CrewScreen />}
       {tab === 'logbook' && <LogbookScreen />}
 
       {tab !== 'live' && (
         <BottomNav
-          active={tab === 'boarding' ? 'home' : (tab as 'home' | 'crew' | 'logbook' | 'hangar')}
+          active={tab === 'boarding' ? 'home' : (tab as 'home' | 'shop' | 'crew' | 'logbook' | 'hangar')}
           onNavigate={navigate}
           hasActiveSession={!!activeSession}
         />
