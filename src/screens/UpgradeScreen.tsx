@@ -25,23 +25,28 @@ export default function UpgradeScreen({ onClose }: Props) {
   const [error, setError]     = useState('')
 
   const handleUpgrade = async () => {
+    console.log('handleUpgrade called. user:', user, 'SERVER_URL:', SERVER_URL)
     if (!user) return
     setLoading(true)
     setError('')
 
     try {
+      console.log('About to fetch:', `${SERVER_URL}/stripe/checkout`)
       const res = await fetch(`${SERVER_URL}/stripe/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, email: user.username }),
       })
+      console.log('Fetch response status:', res.status)
       const data = await res.json()
+      console.log('Response data:', data)
       if (data.url) {
         window.location.href = data.url
       } else {
         setError('Something went wrong. Please try again.')
       }
     } catch (err) {
+      console.error('Checkout fetch threw an error:', err)
       setError('Could not connect to payment server. Make sure stripe-server.js is running.')
     }
     setLoading(false)
