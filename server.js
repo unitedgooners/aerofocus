@@ -217,7 +217,7 @@ async function handleCreateCheckout(req, res, body) {
     const { userId, email } = JSON.parse(body)
     const customerRes = await stripeRequest('POST', 'customers', {
       email,
-      metadata: { supabase_user_id: userId },
+      'metadata[supabase_user_id]': userId,
     })
 
     if (!customerRes.data.id) {
