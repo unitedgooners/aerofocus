@@ -227,6 +227,31 @@ export function findConnectingFlight(
 }
 
 /**
+ * Find live flights near a given airport's coordinates. OpenSky has no
+ * scheduled-departure data, so this is a proximity search over the existing
+ * live pool rather than a true "departures board" — flights currently
+ * airborne near the airport, sorted by distance. Premium-only feature, paired
+ * with the airport picker UI.
+ */
+export function findFlightsNearAirport(flights: Flight[], lat: number, lng: number, maxResults = 15): Flight[] {
+  function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  }
+
+  return [...flights]
+    .map(f => ({ flight: f, distanceKm: haversineKm(lat, lng, f.lat, f.lng) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, maxResults)
+    .map(r => r.flight)
+}
+
+/**
  * Pick a random flight from the pool
  */
 export function pickRandomFlight(flights: Flight[]): Flight | null {

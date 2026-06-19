@@ -4,6 +4,7 @@ import { useSessionStore } from '../store/sessionStore'
 import { useThemeStore } from '../store/themeStore'
 import { useFlightPool } from '../hooks/useFlightPool'
 import RandomFlightButton from '../components/RandomFlightButton'
+import AirportPickerOverlay from '../components/AirportPickerOverlay'
 import { MOCK_SESSIONS } from '../mock/data'
 import { space, radius, font, fontFamily } from '../styles/theme'
 import type { Flight, StudyMode } from '../types'
@@ -50,6 +51,7 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
   const [mode, setMode]         = useState<StudyMode | null>(null)
   const [subject, setSubject]   = useState('')
   const [selected, setSelected] = useState<Flight | null>(null)
+  const [showAirportPicker, setShowAirportPicker] = useState(false)
   const [pomoCfg, setPomoCfg]   = useState<PomoCfg>({
     workMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15,
   })
@@ -381,11 +383,36 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
               <span style={{ color: theme.textAccent, fontWeight: 600 }}>~{fmtHrs(target)}</span>
             </div>
 
-            <RandomFlightButton
-              theme={theme}
-              onUpgrade={onUpgrade}
-              onPicked={(f) => handleSelectFlight(f)}
-            />
+            <div style={{ display: 'flex', gap: space.sm }}>
+              <div style={{ flex: 1 }}>
+                <RandomFlightButton
+                  theme={theme}
+                  onUpgrade={onUpgrade}
+                  onPicked={(f) => handleSelectFlight(f)}
+                />
+              </div>
+              <button
+                onClick={() => setShowAirportPicker(true)}
+                style={{
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: space.sm,
+                  padding: 14, borderRadius: radius.lg,
+                  border: `0.5px solid ${theme.border}`,
+                  background: theme.bgCard, color: theme.text,
+                  fontSize: font.sm, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                <span style={{ fontSize: 16 }}>🛫</span>
+                By airport
+                {!isPremium && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, color: theme.textWarning,
+                    background: theme.bgWarning, padding: '2px 8px', borderRadius: radius.pill, letterSpacing: 0.5,
+                  }}>
+                    PREMIUM
+                  </span>
+                )}
+              </button>
+            </div>
 
             <div style={{ height: space.md }} />
 
@@ -503,6 +530,18 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
         )}
 
       </div>
+
+      {showAirportPicker && (
+        <AirportPickerOverlay
+          theme={theme}
+          onClose={() => setShowAirportPicker(false)}
+          onUpgrade={onUpgrade}
+          onPicked={(f) => {
+            handleSelectFlight(f)
+            setShowAirportPicker(false)
+          }}
+        />
+      )}
     </div>
   )
 }
