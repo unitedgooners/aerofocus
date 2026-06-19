@@ -20,6 +20,7 @@ import { AIRCRAFT_IMAGES } from '../data/aircraftImages'
 
 interface Props {
   onBack: () => void
+  onUpgrade: () => void
 }
 
 const RARITY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -38,7 +39,7 @@ const ERA_LABELS: Record<string, string> = {
   'wide-body': 'Wide-body',
 }
 
-export default function HangarScreen({ onBack }: Props) {
+export default function HangarScreen({ onBack, onUpgrade }: Props) {
   const { user, refreshProfile } = useAuthStore()
   const theme                    = HANGAR  // The Hangar always uses its own theme, independent of cabin lighting
   const { ownedThemes, activeThemeId, load: loadThemes, setActiveTheme } = useBoardingPassThemeStore()
@@ -171,6 +172,25 @@ export default function HangarScreen({ onBack }: Props) {
           </div>
         </div>
 
+        {/* Upgrade prompt — free users only */}
+        {!isPremium && (
+          <button
+            onClick={onUpgrade}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: space.md,
+              background: `linear-gradient(135deg, ${theme.bgCard}, ${theme.bgCardAlt})`,
+              border: `0.5px solid rgba(255,201,92,0.3)`,
+              borderRadius: radius.lg, padding: `${space.md}px ${space.lg}px`,
+              marginBottom: space.lg, cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <span style={{ fontSize: 22 }}>🔓</span>
+            <span style={{ fontSize: font.xs, color: theme.text, lineHeight: 1.4, fontWeight: 600 }}>
+              Want more aircraft? <span style={{ color: theme.textWarning }}>Upgrade to Premium</span> to unlock the full store.
+            </span>
+          </button>
+        )}
+
         {/* Tab switcher */}
         <div style={{
           display: 'flex', background: theme.bgCardAlt,
@@ -233,6 +253,7 @@ export default function HangarScreen({ onBack }: Props) {
             onBuy={handleBuy}
             theme={theme}
             fleetFull={!isPremium && fleet.length >= FREE_TIER_AIRCRAFT_LIMIT}
+            onUpgrade={onUpgrade}
           />
         ) : (
           <ThemeGrid
@@ -254,7 +275,7 @@ export default function HangarScreen({ onBack }: Props) {
 
 // ── Shop grid — purchasable aircraft ─────────────────────────────────────────────
 function ShopGrid({
-  items, ownedIds, balance, buying, onBuy, theme, fleetFull,
+  items, ownedIds, balance, buying, onBuy, theme, fleetFull, onUpgrade,
 }: {
   items: AircraftModel[]
   ownedIds: Set<string>
@@ -263,6 +284,7 @@ function ShopGrid({
   onBuy: (a: AircraftModel) => void
   theme: any
   fleetFull: boolean
+  onUpgrade: () => void
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -339,20 +361,33 @@ function ShopGrid({
                 </span>
               )}
 
-              {!owned && !isFounder && (
+              {!owned && !isFounder && fleetFull && (
                 <button
-                  onClick={() => onBuy(aircraft)}
-                  disabled={!canAfford || fleetFull || buying === aircraft.id}
+                  onClick={onUpgrade}
                   style={{
                     padding: '8px 20px', borderRadius: radius.md, border: 'none',
-                    background: canAfford && !fleetFull ? theme.bgPrimary : theme.bgCardAlt,
-                    color: canAfford && !fleetFull ? '#fff' : theme.textTertiary,
+                    background: 'rgba(255,201,92,0.18)', color: '#BA7517',
+                    fontSize: font.xs, fontWeight: 700, cursor: 'pointer',
+                  }}
+                >
+                  Upgrade to unlock
+                </button>
+              )}
+
+              {!owned && !isFounder && !fleetFull && (
+                <button
+                  onClick={() => onBuy(aircraft)}
+                  disabled={!canAfford || buying === aircraft.id}
+                  style={{
+                    padding: '8px 20px', borderRadius: radius.md, border: 'none',
+                    background: canAfford ? theme.bgPrimary : theme.bgCardAlt,
+                    color: canAfford ? '#fff' : theme.textTertiary,
                     fontSize: font.xs, fontWeight: 700,
-                    cursor: canAfford && !fleetFull && buying !== aircraft.id ? 'pointer' : 'not-allowed',
+                    cursor: canAfford && buying !== aircraft.id ? 'pointer' : 'not-allowed',
                     opacity: buying === aircraft.id ? 0.6 : 1,
                   }}
                 >
-                  {buying === aircraft.id ? 'Buying...' : fleetFull ? 'Fleet full' : canAfford ? 'Buy' : 'Not enough cash'}
+                  {buying === aircraft.id ? 'Buying...' : canAfford ? 'Buy' : 'Not enough cash'}
                 </button>
               )}
             </div>

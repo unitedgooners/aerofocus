@@ -147,15 +147,17 @@ export default function App() {
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
       {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
-      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} />}
+      {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
       {tab === 'crew'    && <CrewScreen />}
       {tab === 'logbook' && <LogbookScreen />}
 
-      <BottomNav
-        active={tab === 'boarding' || tab === 'live' ? 'live' : (tab as 'home' | 'crew' | 'logbook' | 'hangar')}
-        onNavigate={navigate}
-        hasActiveSession={!!activeSession}
-      />
+      {tab !== 'live' && (
+        <BottomNav
+          active={tab === 'boarding' ? 'home' : (tab as 'home' | 'crew' | 'logbook' | 'hangar')}
+          onNavigate={navigate}
+          hasActiveSession={!!activeSession}
+        />
+      )}
 
       {/* Upgrade modal — shown over any screen */}
       {showUpgrade && <UpgradeScreen onClose={() => setShowUpgrade(false)} />}
