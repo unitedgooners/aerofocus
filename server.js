@@ -25,6 +25,11 @@ const OPENSKY_CLIENT_ID     = process.env.OPENSKY_CLIENT_ID || ''
 const OPENSKY_CLIENT_SECRET = process.env.OPENSKY_CLIENT_SECRET || ''
 const SUPABASE_URL          = process.env.SUPABASE_URL || ''
 const SUPABASE_ANON_KEY     = process.env.SUPABASE_ANON_KEY || ''
+// Service role key — bypasses Row Level Security. Only ever used for the
+// Stripe webhook's profile update, which is gated behind signature
+// verification before this is ever touched. Never expose this key to the
+// frontend (Vercel, browser bundles, etc.) — Railway env vars only.
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const STRIPE_SECRET_KEY     = process.env.STRIPE_SECRET_KEY || ''
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
 const STRIPE_PRICE_ID       = process.env.STRIPE_PRICE_ID || ''
@@ -155,9 +160,13 @@ async function proxyOpenSky(req, res) {
 }
 
 // ── Supabase helper ───────────────────────────────────────────────────────────
-function supabaseRequest(method, path, body) {
+// useServiceRole: true bypasses RLS — only pass true for trusted, verified
+// server-side writes (e.g. the Stripe webhook after signature verification).
+// Everything else (poller upserts) uses the regular anon key by default.
+function supabaseRequest(method, path, body, useServiceRole = false) {
   return new Promise((resolve, reject) => {
     if (!SUPABASE_URL) { resolve(null); return }
+    const key    = useServiceRole && SUPABASE_SERVICE_ROLE_KEY ? SUPABASE_SERVICE_ROLE_KEY : SUPABASE_ANON_KEY
     const url    = new URL(SUPABASE_URL)
     const data   = body ? JSON.stringify(body) : null
     const options = {
@@ -165,8 +174,8 @@ function supabaseRequest(method, path, body) {
       path:     `/rest/v1/${path}`,
       method,
       headers: {
-        'apikey':        SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'apikey':        key,
+        'Authorization': `Bearer ${key}`,
         'Content-Type':  'application/json',
         'Prefer':        method === 'POST' ? 'resolution=merge-duplicates' : '',
         ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}),
@@ -272,12 +281,18 @@ async function handleWebhook(req, res, body) {
     const userId = sub.metadata?.supabase_user_id
     const active = ['active', 'trialing'].includes(sub.status)
     if (userId) {
-      await supabaseRequest('PATCH', `profiles?id=eq.${userId}`, {
+      const result = await supabaseRequest('PATCH', `profiles?id=eq.${userId}`, {
         tier:                   active ? 'premium' : 'free',
         stripe_customer_id:     sub.customer,
         stripe_subscription_id: sub.id,
-      })
-      console.log(`  User ${userId} → ${active ? 'premium' : 'free'}`)
+      }, true)
+      if (result && result.status >= 200 && result.status < 300) {
+        console.log(`  User ${userId} → ${active ? 'premium' : 'free'}`)
+      } else {
+        console.error(`  Failed to update user ${userId}: status ${result?.status}, body: ${result?.body}`)
+      }
+    } else {
+      console.error('  Webhook had no supabase_user_id in subscription metadata:', JSON.stringify(sub.metadata))
     }
   }
 
@@ -285,8 +300,12 @@ async function handleWebhook(req, res, body) {
     const sub    = event.data.object
     const userId = sub.metadata?.supabase_user_id
     if (userId) {
-      await supabaseRequest('PATCH', `profiles?id=eq.${userId}`, { tier: 'free' })
-      console.log(`  User ${userId} downgraded → free`)
+      const result = await supabaseRequest('PATCH', `profiles?id=eq.${userId}`, { tier: 'free' }, true)
+      if (result && result.status >= 200 && result.status < 300) {
+        console.log(`  User ${userId} downgraded → free`)
+      } else {
+        console.error(`  Failed to downgrade user ${userId}: status ${result?.status}, body: ${result?.body}`)
+      }
     }
   }
 
@@ -415,6 +434,9 @@ server.listen(PORT, () => {
   console.log(`   Stripe   → /stripe/checkout, /stripe/webhook`)
   console.log(`   Health   → /health`)
   console.log(`   Polling every ${POLL_INTERVAL_MS / 60000} minutes`)
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('  ⚠ SUPABASE_SERVICE_ROLE_KEY not set — Stripe webhook profile updates will silently fail under RLS')
+  }
 })
 
 // Start poller
