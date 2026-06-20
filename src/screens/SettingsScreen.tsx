@@ -34,7 +34,7 @@ export default function SettingsScreen({ onBack, onAccountDeleted, onOpenLegal }
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: theme.bg, transition: 'background 0.6s ease' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: theme.bg, overflowY: 'auto', transition: 'background 0.6s ease' }}>
       <div style={{ maxWidth: 480, margin: '0 auto', padding: `${space.xl}px ${space.lg}px 100px` }}>
 
         <button onClick={onBack} style={{

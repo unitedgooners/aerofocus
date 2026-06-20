@@ -18,12 +18,14 @@ export default function RandomFlightButton({ theme, onPicked, onUpgrade }: Props
   const [open, setOpen]         = useState(false)
   const [useCustom, setUseCustom] = useState(false)
   const [customMinutes, setCustomMinutes] = useState(45)
+  const [noFlightsError, setNoFlightsError] = useState(false)
 
   const handleClick = () => {
     if (!isPremium) {
       onUpgrade()
       return
     }
+    setNoFlightsError(false)
     setOpen(true)
   }
 
@@ -35,6 +37,11 @@ export default function RandomFlightButton({ theme, onPicked, onUpgrade }: Props
     if (flight) {
       onPicked(flight)
       setOpen(false)
+    } else {
+      // No live flights available right now (e.g. live data temporarily
+      // down) — surface this clearly instead of the button silently doing
+      // nothing, which looks broken.
+      setNoFlightsError(true)
     }
   }
 
@@ -139,6 +146,16 @@ export default function RandomFlightButton({ theme, onPicked, onUpgrade }: Props
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {noFlightsError && (
+              <div style={{
+                background: theme.bgDanger, color: theme.textDanger,
+                borderRadius: radius.md, padding: `${space.sm}px ${space.md}px`,
+                fontSize: font.xs, marginBottom: space.md, textAlign: 'center',
+              }}>
+                No live flights available right now — live flight data may be temporarily down. Try again in a moment.
               </div>
             )}
 
