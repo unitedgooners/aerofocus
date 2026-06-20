@@ -393,6 +393,92 @@ async function poll() {
   }
 }
 
+// ── Account deletion ────────────────────────────────────────────────────────────
+// Uses the Supabase Admin API (requires service_role) to delete the auth.users
+// row entirely. Our cascade foreign keys (migration 016) handle cleaning up
+// profiles, sessions, user_fleet, user_themes, etc. automatically once the
+// auth user is gone.
+async function handleDeleteAccount(req, res, body) {
+  try {
+    const { userId, accessToken } = JSON.parse(body)
+
+    if (!userId || !accessToken) {
+      jsonResponse(res, 400, { error: 'Missing userId or accessToken' })
+      return
+    }
+
+    // Verify the access token actually belongs to this user before deleting
+    // anything — prevents one user from deleting another user's account by
+    // guessing/sending a different userId with their own valid token.
+    const verifyRes = await new Promise((resolve, reject) => {
+      const url = new URL(SUPABASE_URL)
+      const options = {
+        hostname: url.hostname,
+        path:     '/auth/v1/user',
+        method:   'GET',
+        headers: {
+          'apikey':        SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+      const r = https.request(options, resp => {
+        let data = ''
+        resp.on('data', c => data += c)
+        resp.on('end', () => {
+          try { resolve({ status: resp.statusCode, data: JSON.parse(data) }) }
+          catch (e) { reject(e) }
+        })
+      })
+      r.on('error', reject)
+      r.end()
+    })
+
+    if (verifyRes.status !== 200 || verifyRes.data.id !== userId) {
+      jsonResponse(res, 403, { error: 'Token does not match userId — cannot delete' })
+      return
+    }
+
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Account deletion failed: SUPABASE_SERVICE_ROLE_KEY not configured')
+      jsonResponse(res, 500, { error: 'Server not configured for account deletion' })
+      return
+    }
+
+    // Delete the auth user via Admin API — cascades to profiles and
+    // everything beneath it per migration 016's foreign keys.
+    const deleteRes = await new Promise((resolve, reject) => {
+      const url = new URL(SUPABASE_URL)
+      const options = {
+        hostname: url.hostname,
+        path:     `/auth/v1/admin/users/${userId}`,
+        method:   'DELETE',
+        headers: {
+          'apikey':        SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+      const r = https.request(options, resp => {
+        let data = ''
+        resp.on('data', c => data += c)
+        resp.on('end', () => resolve({ status: resp.statusCode, body: data }))
+      })
+      r.on('error', reject)
+      r.end()
+    })
+
+    if (deleteRes.status >= 200 && deleteRes.status < 300) {
+      console.log(`  Account deleted: ${userId}`)
+      jsonResponse(res, 200, { success: true })
+    } else {
+      console.error(`  Account deletion failed for ${userId}: status ${deleteRes.status}, body: ${deleteRes.body}`)
+      jsonResponse(res, 500, { error: 'Failed to delete account' })
+    }
+  } catch (err) {
+    console.error('Account deletion error:', err)
+    jsonResponse(res, 500, { error: 'Failed to delete account', detail: err.message })
+  }
+}
+
 // ── HTTP server ───────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   setCORS(res)
@@ -416,6 +502,12 @@ const server = http.createServer(async (req, res) => {
   // Stripe webhook
   if (req.method === 'POST' && req.url === '/stripe/webhook') {
     await handleWebhook(req, res, body)
+    return
+  }
+
+  // Account deletion
+  if (req.method === 'POST' && req.url === '/account/delete') {
+    await handleDeleteAccount(req, res, body)
     return
   }
 

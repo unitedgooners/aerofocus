@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { useThemeStore } from '../store/themeStore'
 import { useAuthStore } from '../store/authStore'
 import { useBoardingPassThemeStore } from '../store/boardingPassThemeStore'
-import { space, radius, font } from '../styles/theme'
+import { space, radius, font, fontFamily } from '../styles/theme'
 import { getPassColors } from '../styles/passThemes'
 import { useEffectivePremium } from '../hooks/useEffectivePremium'
 import type { Session } from '../types'
@@ -78,12 +78,12 @@ export default function ShareCardScreen({ session, onHome }: Props) {
 
         <div style={{ textAlign: 'center', marginBottom: space.xl }}>
           <div style={{ fontSize: 40, marginBottom: space.sm }}>🛬</div>
-          <div style={{ fontSize: font.xl, fontWeight: 700, color: theme.text, letterSpacing: -0.5 }}>You landed!</div>
+          <div style={{ fontFamily: fontFamily.display, fontSize: 24, fontWeight: 600, color: theme.text, letterSpacing: -0.5 }}>You landed!</div>
           <div style={{ fontSize: font.sm, color: theme.textSecondary, marginTop: space.xs }}>Here's your boarding pass</div>
         </div>
 
         {/* Boarding pass — exported by html2canvas */}
-        <div ref={cardRef} style={{ background: pass.bg, borderRadius: radius.xl, overflow: 'hidden', marginBottom: space.lg, position: 'relative' }}>
+        <div ref={cardRef} style={{ background: pass.bg, borderRadius: radius.xl, overflow: 'hidden', marginBottom: space.lg, position: 'relative', boxShadow: '0 20px 40px -14px rgba(0,0,0,0.22)' }}>
 
           {/* Premium sticker overlay */}
           {sticker && (
@@ -104,14 +104,14 @@ export default function ShareCardScreen({ session, onHome }: Props) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: space.xl }}>
               <div>
-                <div style={{ fontSize: 42, fontWeight: 700, color: pass.text, letterSpacing: -2, lineHeight: 1 }}>
+                <div style={{ fontFamily: fontFamily.display, fontSize: 44, fontWeight: 600, color: pass.text, letterSpacing: -1.5, lineHeight: 1 }}>
                   {f.origin === '—' ? '???' : f.origin}
                 </div>
                 <div style={{ fontSize: font.xs, color: pass.text, opacity: 0.4, marginTop: 4 }}>{f.originCity}</div>
               </div>
               <div style={{ fontSize: font.xl, color: pass.text, opacity: 0.2, marginBottom: 8 }}>✈</div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 42, fontWeight: 700, color: pass.text, letterSpacing: -2, lineHeight: 1 }}>
+                <div style={{ fontFamily: fontFamily.display, fontSize: 44, fontWeight: 600, color: pass.text, letterSpacing: -1.5, lineHeight: 1 }}>
                   {f.destination === '—' ? '???' : f.destination}
                 </div>
                 <div style={{ fontSize: font.xs, color: pass.text, opacity: 0.4, marginTop: 4 }}>{f.destinationCity}</div>

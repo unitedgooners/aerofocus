@@ -12,6 +12,10 @@ import LogbookScreen from './screens/LogbookScreen'
 import ResetPasswordScreen from './screens/ResetPasswordScreen'
 import UpgradeScreen from './screens/UpgradeScreen'
 import HangarScreen from './screens/HangarScreen'
+import SettingsScreen from './screens/SettingsScreen'
+import OnboardingScreen from './screens/OnboardingScreen'
+import LegalDocScreen from './screens/LegalDocScreen'
+import { PRIVACY_POLICY, TERMS_OF_SERVICE } from './data/legalContent'
 import ShopScreen from './screens/ShopScreen'
 import { useUpgradeStore } from './store/upgradeStore'
 import BottomNav from './components/BottomNav'
@@ -37,6 +41,8 @@ export default function App() {
   const [lastSession, setLastSession]    = useState<Session | null>(null)
   const [showShare, setShowShare]        = useState(false)
   const [showUpgrade, setShowUpgrade]    = useState(false)
+  const [showSettings, setShowSettings]  = useState(false)
+  const [showLegalDoc, setShowLegalDoc]  = useState<'privacy' | 'terms' | null>(null)
   const [isReset, setIsReset]            = useState(false)
   const { isTemporarilyPremium, justUpgraded, checkDailyRoll, dismissCelebration } = useUpgradeStore()
 
@@ -78,6 +84,18 @@ export default function App() {
   )
 
   if (!user) return <LoginScreen onSuccess={() => setTab('home')} />
+
+  const onboardingKey = `ff_onboarded_${user.id}`
+  if (!localStorage.getItem(onboardingKey)) {
+    return (
+      <OnboardingScreen
+        onDone={() => {
+          localStorage.setItem(onboardingKey, '1')
+          setTab('home')
+        }}
+      />
+    )
+  }
 
   if (showShare) return (
     <ShareCardScreen
@@ -146,7 +164,7 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', position: 'relative' }}>
-      {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} />}
+      {tab === 'home'    && <HomeScreen onBoard={handleBoard} onUpgrade={() => setShowUpgrade(true)} onHangar={() => setTab('hangar')} onSettings={() => setShowSettings(true)} />}
       {tab === 'live'    && <LiveSessionScreen onEnd={handleSessionEnd} />}
       {tab === 'hangar'  && <HangarScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
       {tab === 'shop'    && <ShopScreen onBack={() => setTab('home')} onUpgrade={() => setShowUpgrade(true)} />}
@@ -163,6 +181,32 @@ export default function App() {
 
       {/* Upgrade modal — shown over any screen */}
       {showUpgrade && <UpgradeScreen onClose={() => setShowUpgrade(false)} />}
+
+      {showSettings && (
+        <SettingsScreen
+          onBack={() => setShowSettings(false)}
+          onAccountDeleted={() => setShowSettings(false)}
+          onOpenLegal={(doc) => setShowLegalDoc(doc)}
+        />
+      )}
+
+      {showLegalDoc === 'privacy' && (
+        <LegalDocScreen
+          onBack={() => setShowLegalDoc(null)}
+          title={PRIVACY_POLICY.title}
+          lastUpdated={PRIVACY_POLICY.lastUpdated}
+          sections={PRIVACY_POLICY.sections}
+        />
+      )}
+
+      {showLegalDoc === 'terms' && (
+        <LegalDocScreen
+          onBack={() => setShowLegalDoc(null)}
+          title={TERMS_OF_SERVICE.title}
+          lastUpdated={TERMS_OF_SERVICE.lastUpdated}
+          sections={TERMS_OF_SERVICE.sections}
+        />
+      )}
 
       {/* Random upgrade celebration — shown once when the daily roll succeeds */}
       {justUpgraded && (

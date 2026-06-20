@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import { useSessionStore } from '../store/sessionStore'
 import { useThemeStore } from '../store/themeStore'
 import { useFlightPool } from '../hooks/useFlightPool'
+import { pickRandomFlightForDuration } from '../api/opensky'
 import RandomFlightButton from '../components/RandomFlightButton'
 import AirportPickerOverlay from '../components/AirportPickerOverlay'
 import { MOCK_SESSIONS } from '../mock/data'
@@ -14,6 +15,7 @@ interface Props {
   onBoard: (flight: Flight, mode: StudyMode, subject: string, pomoCfg?: PomoCfg, wantsChain?: boolean) => void
   onUpgrade: () => void
   onHangar: () => void
+  onSettings: () => void
 }
 
 type Step = 'mode' | 'settings' | 'flight'
@@ -42,8 +44,8 @@ function calcTarget(mode: StudyMode, cfg: PomoCfg, blockCount: number, targetDur
   return targetDuration
 }
 
-export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
-  const { user, logout }    = useAuthStore()
+export default function HomeScreen({ onBoard, onUpgrade, onHangar, onSettings }: Props) {
+  const { user }    = useAuthStore()
   const { theme }           = useThemeStore()
   const { flights, isLoading, error, lastFetched, isPremium } = useFlightPool()
 
@@ -58,6 +60,7 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
   const [blockCount, setBlockCount]           = useState(4)
   const [targetDuration, setTargetDuration]   = useState(60)
   const [wantsChain, setWantsChain]           = useState(false)
+  const [randomLocked, setRandomLocked]       = useState(false)
 
   const target = mode ? calcTarget(mode, pomoCfg, blockCount, targetDuration) : 60
 
@@ -131,12 +134,12 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
               {user?.username}
             </div>
           </div>
-          <button onClick={logout} style={{
+          <button onClick={onSettings} style={{
             background: 'none', border: `0.5px solid ${theme.border}`, color: theme.textTertiary,
-            width: 30, height: 30, borderRadius: '50%', fontSize: 11, cursor: 'pointer',
+            width: 30, height: 30, borderRadius: '50%', fontSize: 13, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
           }}>
-            ⏻
+            ⚙
           </button>
         </div>
 
@@ -215,6 +218,30 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
         {/* ── STEP 1: MODE ─────────────────────────────────────────────────── */}
         {step === 'mode' && (
           <>
+            <RandomFlightButton
+              theme={theme}
+              onUpgrade={onUpgrade}
+              onPicked={(f) => { setSelected(f); setRandomLocked(true) }}
+            />
+
+            {selected && randomLocked && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: theme.bgSuccess, border: `0.5px solid ${theme.textSuccess}30`,
+                borderRadius: radius.lg, padding: `${space.sm}px ${space.lg}px`,
+                marginTop: space.sm, marginBottom: space.lg,
+              }}>
+                <span style={{ fontSize: font.xs, color: theme.textSuccess, fontWeight: 600 }}>
+                  ✓ {selected.id} ready · {selected.remainingMinutes}m flight
+                </span>
+                <button onClick={() => { setSelected(null); setRandomLocked(false) }} style={{ background: 'none', border: 'none', color: theme.textSuccess, fontSize: font.xs, cursor: 'pointer', opacity: 0.7 }}>
+                  Clear
+                </button>
+              </div>
+            )}
+
+            <div style={{ height: space.md }} />
+
             <div style={sectionLbl}>HOW DO YOU WANT TO STUDY?</div>
             {MODES.map(m => (
               <button key={m.value} onClick={() => handleSelectMode(m.value)} style={{
@@ -356,16 +383,62 @@ export default function HomeScreen({ onBoard, onUpgrade, onHangar }: Props) {
               placeholder="e.g. Organic Chemistry, Bar Exam, Spanish..."
               value={subject}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSubject(e.target.value)}
-              style={{ width: '100%', padding: '13px 14px', borderRadius: radius.md, border: `0.5px solid ${theme.borderMed}`, background: theme.bgInput, color: theme.text, fontSize: font.sm, outline: 'none', marginBottom: space.xl }}
+              style={{ width: '100%', padding: '13px 14px', borderRadius: radius.md, border: `0.5px solid ${theme.borderMed}`, background: theme.bgInput, color: theme.text, fontSize: font.sm, outline: 'none', marginBottom: space.lg }}
             />
 
-            <button onClick={() => setStep('flight')} style={{
-              width: '100%', padding: 16, borderRadius: radius.lg, border: 'none',
-              background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
-              color: '#fff', fontSize: font.md, fontWeight: 700, cursor: 'pointer',
-              boxShadow: `0 8px 20px -4px ${theme.gradientFrom}55`,
-            }}>
-              Find my flight →
+            {!randomLocked && (
+              <button
+                onClick={() => {
+                  if (!isPremium) { onUpgrade(); return }
+                  const flight = pickRandomFlightForDuration(flights, target)
+                  if (flight) { setSelected(flight); setRandomLocked(true) }
+                }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: space.sm,
+                  padding: 14, borderRadius: radius.lg, border: `0.5px solid ${theme.border}`,
+                  background: theme.bgCard, color: theme.text,
+                  fontSize: font.sm, fontWeight: 600, cursor: 'pointer', marginBottom: space.md,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>🎲</span>
+                Surprise me — random flight for this {fmtHrs(target)} session
+                {!isPremium && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, color: theme.textWarning,
+                    background: theme.bgWarning, padding: '2px 8px', borderRadius: radius.pill, letterSpacing: 0.5,
+                  }}>
+                    PREMIUM
+                  </span>
+                )}
+              </button>
+            )}
+
+            {randomLocked && selected && (
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: theme.bgSuccess, border: `0.5px solid ${theme.textSuccess}30`,
+                borderRadius: radius.lg, padding: `${space.sm}px ${space.lg}px`,
+                marginBottom: space.md,
+              }}>
+                <span style={{ fontSize: font.xs, color: theme.textSuccess, fontWeight: 600 }}>
+                  ✓ {selected.id} assigned · {selected.remainingMinutes}m flight
+                </span>
+                <button onClick={() => { setSelected(null); setRandomLocked(false) }} style={{ background: 'none', border: 'none', color: theme.textSuccess, fontSize: font.xs, cursor: 'pointer', opacity: 0.7 }}>
+                  Clear
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => randomLocked ? handleBoard() : setStep('flight')}
+              style={{
+                width: '100%', padding: 16, borderRadius: radius.lg, border: 'none',
+                background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientTo})`,
+                color: '#fff', fontSize: font.md, fontWeight: 700, cursor: 'pointer',
+                boxShadow: `0 8px 20px -4px ${theme.gradientFrom}55`,
+              }}
+            >
+              {randomLocked && selected ? `View Boarding Pass · ${selected.id} ✈` : 'Find my flight →'}
             </button>
           </>
         )}

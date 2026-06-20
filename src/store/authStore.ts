@@ -12,6 +12,7 @@ interface AuthState {
   loadSession: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   refreshProfile: () => Promise<void>
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>
   clearError: () => void
 }
 
@@ -177,6 +178,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (!session?.user) return
     const profile = await fetchOrCreateProfile(session.user.id, session.user.email ?? '', session.user.user_metadata?.username)
     if (profile) set({ user: profile })
+  },
+
+  deleteAccount: async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return { success: false, error: 'Not logged in' }
+
+    try {
+      // Calls the delete_my_account() Postgres function (migration 016),
+      // which is security definer and scoped to auth.uid() internally — no
+      // server round-trip needed, Supabase handles this directly.
+      const { error } = await supabase.rpc('delete_my_account')
+      if (error) return { success: false, error: error.message }
+
+      await supabase.auth.signOut()
+      set({ user: null, error: null })
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: 'Could not delete account. Please try again.' }
+    }
   },
 
   clearError: () => set({ error: null }),
